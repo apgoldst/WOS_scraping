@@ -23,7 +23,7 @@ def search_records(csv_file):
         prefix = grant_number_full[3:5]
         grant_number = grant_number_full[5:]
         query = "FT = " + prefix + grant_number + " OR FT = " + prefix + " " + grant_number
-        # print query
+        print query
         filename = "grant search results - full html/" + query + ".txt"
         file_list.append(filename)
 
