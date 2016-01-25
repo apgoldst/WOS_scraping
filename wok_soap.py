@@ -37,14 +37,14 @@ def search(query, SID):
     client['search'] = Client(url['search'], transport = http)
 
     qparams = {
-                'databaseId' : 'WOS',
-                'userQuery' : query,
-                'queryLanguage' : 'en'
+                'databaseId': 'WOS',
+                'userQuery': query,
+                'queryLanguage': 'en'
             }
 
     rparams = {
-                'count' : 100, # 1-100
-                'firstRecord' : 1
+                'count': 100, # 1-100
+                'firstRecord': 1
             }
 
     return client['search'].service.search(qparams, rparams)
