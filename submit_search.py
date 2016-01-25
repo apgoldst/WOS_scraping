@@ -5,11 +5,11 @@
 
 import csv
 import os
-import wok_soap_2
+import wok_soap
 
 
 def search_records(csv_file):
-    SID = wok_soap_2.auth()
+    SID = wok_soap.auth()
 
     with open(csv_file, "rb") as h:
         text = csv.reader(h)
@@ -24,14 +24,14 @@ def search_records(csv_file):
         grant_number = grant_number_full[5:]
         query = "FT = " + prefix + grant_number + " OR FT = " + prefix + " " + grant_number
         # print query
-        filename = "output/" + query + ".txt"
+        filename = "grant search results - full html/" + query + ".txt"
         file_list.append(filename)
 
         if not os.path.exists(filename):
             # Search on WOS
             # Only the first 100 records will be returned.
-            # To get more than 100, you need to write a "retrieve" method into wok_soap_2.py
-            results = wok_soap_2.search(query, SID)
+            # To get more than 100, you need to write a "retrieve" method into wok_soap.py
+            results = wok_soap.search(query, SID)
 
             # Interpret raw search results stored in 4th line of object
             # results_string = str(results[3])
@@ -54,7 +54,7 @@ def search_records(csv_file):
     return [grant_list, file_list]
 
 
-csv_file = "DOE grant numbers_3.csv"
+csv_file = "DOE grant short list.csv"
 
 if __name__ == '__main__':
-    search_records(csv_file)
+    search_records(csv_file[:10])

@@ -1,6 +1,6 @@
 import save_tables
 
-csv_file = "DOE grant numbers.csv"
+csv_file = "DOE grant short list.csv"
 ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
 
 save_tables.print_pub_table(csv_file, ns)

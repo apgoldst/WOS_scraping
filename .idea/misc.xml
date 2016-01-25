@@ -69,18 +69,6 @@
     <ConfirmationsSetting value="0" id="Remove" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 2.7.11 (C:\Anaconda2\python.exe)" project-jdk-type="Python SDK" />
-  <component name="PyConsoleOptionsProvider">
-    <option name="myPythonConsoleState">
-      <console-settings sdk-home="C:\Anaconda2\python.exe" working-directory="$PROJECT_DIR$/..">
-        <option name="mySdkHome" value="C:\Anaconda2\python.exe" />
-        <option name="myWorkingDirectory" value="$PROJECT_DIR$/.." />
-      </console-settings>
-    </option>
-  </component>
-  <component name="VagrantProjectSettings">
-    <option name="instanceFolder" value="" />
-    <option name="provider" value="" />
-  </component>
   <component name="masterDetails">
     <states>
       <state key="ScopeChooserConfigurable.UI">

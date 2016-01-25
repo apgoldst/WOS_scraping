@@ -51,7 +51,7 @@ def parse_XML(csv_file, ns):
 
 def print_grant_table(csv_file, ns):
 
-    with open("grant table - publications.csv", "wb") as g:
+    with open("WOS_scraping - data on DOE grants.csv", "wb") as g:
         writer = csv.writer(g, delimiter=',')
         writer.writerow(["DOE Grant Number", "Number of Publications"])
         data = parse_XML(csv_file, ns)
@@ -63,7 +63,7 @@ def print_grant_table(csv_file, ns):
 
 def print_pub_table(csv_file, ns):
 
-    with open("publication table.csv", "wb") as g:
+    with open("WOS_scraping - papers citing DOE grants.csv", "wb") as g:
         writer = csv.writer(g, delimiter=',')
         writer.writerow(["UID", "Article Title", "Journal Name", "DOI", "DOE Grant Number"])
         data = parse_XML(csv_file, ns)
