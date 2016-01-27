@@ -5,13 +5,36 @@ import xml.etree.ElementTree as ET
 import csv
 
 
-csv_file = "DOE grant short list.csv"
+csv_file = "DOE grant long list.csv"
 ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
-
 
 # Save tables of data per publication and per grant
 save_tables.print_pub_table(csv_file)
 save_tables.print_grant_table(csv_file)
+
+
+# data = []
+# data.append({"__paper list": []})
+# data.append({"__paper list": [1,2,3,4]})
+# print data
+# print data[1]["__paper list"][0]
+#
+# for grant in data:
+#     example_paper = grant["__paper list"]
+#     print example_paper
+#     if example_paper:
+#         break
+#
+# print "example_paper is " + str(example_paper)
+
+
+
+# SID = wok_soap.auth()
+# print SID
+#
+# UID = "WOS:000346178800058"
+# results = wok_soap.citedReferences(UID, SID)
+# print results
 
 # # Test XML parsing for first record in a file of search results
 # filename = "grant search results - full html/FT = AR0000007 OR FT = AR 0000007.txt"
@@ -61,7 +84,9 @@ save_tables.print_grant_table(csv_file)
 # print dir(results[1][0])
 # print results[1][0].citedWork
 
+# UID = "000341217500093"
 # results = wok_soap.retrieveById(UID, SID)
+# print results[3]
 # tree = ET.fromstring(results[3])
 # refs = tree.find(".//" + ns + "refs")
 # ref_count = refs.attrib['count']

@@ -31,6 +31,7 @@ def auth():
 
 def search(query, SID):
     url = client = {}
+    start_time = time.time()
 
     http = HttpTransport()
     opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
@@ -45,11 +46,16 @@ def search(query, SID):
     rparams = {'count': 100,
                'firstRecord': 1}
 
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
+
     return client['search'].service.search(qparams, rparams)
 
 
 def retrieveById(UID, SID):
     url = client = {}
+    start_time = time.time()
 
     http = HttpTransport()
     opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
@@ -64,11 +70,40 @@ def retrieveById(UID, SID):
     rparams = {'count': 1,
                'firstRecord': 1}
 
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
+
     return client['retrieveById'].service.retrieveById(databaseId, uid, queryLanguage, rparams)
+
+
+def citingArticles(UID, SID):
+    url = client = {}
+    start_time = time.time()
+
+    http = HttpTransport()
+    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    http.urlopener = opener
+    url['citingArticles'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
+    client['citingArticles'] = Client(url['citingArticles'], transport=http)
+
+    databaseId = "WOS"
+    uid = UID
+    queryLanguage = "en"
+
+    rparams = {'count': 1,
+               'firstRecord': 1}
+
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
+
+    return client['citingArticles'].service.citingArticles(databaseId, uid, queryLanguage, rparams)
 
 
 def retrieve(queryId, SID, start_count):
     url = client = {}
+    start_time = time.time()
 
     http = HttpTransport()
     opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
@@ -79,11 +114,16 @@ def retrieve(queryId, SID, start_count):
     rparams = {'count': 100,
                'firstRecord': start_count}
 
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
+
     return client['retrieve'].service.retrieve(queryId, rparams)
 
 
 def citedReferences(UID, SID):
     url = client = {}
+    start_time = time.time()
 
     http = HttpTransport()
     opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
@@ -95,19 +135,19 @@ def citedReferences(UID, SID):
     uid = UID
     queryLanguage = "en"
 
-    # qparams = {'databaseId': 'WOS',
-    #            'uid': UID,
-    #            'queryLanguage': 'en'}
-
     rparams = {'count': 100,
                'firstRecord': 1}
 
-    time.sleep(0.2)
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
+
     return client['citedReferences'].service.citedReferences(databaseId, uid, queryLanguage, rparams)
 
 
 def citedReferencesRetrieve(queryId, SID, start_count):
     url = client = {}
+    start_time = time.time()
 
     http = HttpTransport()
     opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
@@ -117,6 +157,10 @@ def citedReferencesRetrieve(queryId, SID, start_count):
 
     rparams = {'count': 100,
                'firstRecord': start_count}
+
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
 
     return client['citedReferencesRetrieve'].service.citedReferencesRetrieve(queryId, rparams)
 

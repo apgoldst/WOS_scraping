@@ -5,12 +5,14 @@ import xml.etree.ElementTree as ET
 import csv
 import submit_search
 import wok_soap
+import time
 
 
-# Construct a dictionary with information about a paper using an XML element
-# that is retrieved from a WOS search results file
 def process_article(record):
+
     ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
+
+    # construct a dictionary to hold publication data
     paper = {"UID": 0,
              "Article Title": "",
              "DOI": "",
@@ -37,15 +39,17 @@ def process_article(record):
     pub_info = summary.find(ns + "pub_info")
     date = pub_info.attrib['sortdate']
     paper["Publication Date"] = date
+
     page_count = pub_info.find(ns + "page").attrib['page_count']
     paper["Number of Pages"] = page_count
 
-    # titles = static_data.find(".//" + ns + "titles")
     titles = summary.find(ns + "titles")
     article_title = titles.find("*[@type='item']").text
     paper["Article Title"] = article_title
+
     journal_title = titles.find("*[@type='source']").text
     paper["Journal Title"] = journal_title
+
     doi = dynamic_data.find(".//*[@type='doi']")
     if doi is not None:
         doi = doi.attrib['value']
@@ -59,6 +63,7 @@ def process_article(record):
             full_name = name.find(ns + "full_name").text
             author_list.append(full_name)
             author_count += 1
+
     paper["Authors"] = author_list
     paper["Number of Authors"] = author_count
 
@@ -81,17 +86,28 @@ def process_article(record):
 
 
 def parse_XML(csv_file):
+
+    # start session
     SID = wok_soap.auth()
+
+    # run search to output list of grant numbers and list of search results file names
     grants_and_files = submit_search.search_by_grant(csv_file, SID)
     grant_list = grants_and_files[0]
     file_list = grants_and_files[1]
 
-    # data = []
-    data = [{"DOE Grant Number": grant_list[i],
+    # start new session after 2000 records have been processed
+    counter = grants_and_files[2]
+    if counter > 2000:
+        SID = wok_soap.auth()
+
+    # construct dictionary to hold grant data
+    data = [{"Award Number": grant_list[i],
              "Number of Publications": 0}
             for i in range(len(grant_list))]
 
     for i, filename in enumerate(file_list):
+
+        # open search results file and parse as XML
         with open(filename, "r+") as h:
             tree = ET.parse(h)
             root = tree.getroot()
@@ -100,23 +116,36 @@ def parse_XML(csv_file):
         paper_list = []
 
         for rec in range(len(root)):
+
             record = root[rec]
             paper = process_article(record)
 
-            # UID_num = paper["UID"][4:]
             UID = paper["UID"]
-            cited_refs_file = submit_search.search_for_cited_refs(UID, SID)
-            # cited_refs = process_cited_refs(cited_refs_file)
+
+            cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
+            cited_refs_file = cited_refs_output[0]
+
+            counter = cited_refs_output[1]
+            if counter > 2000:
+                SID = wok_soap.auth()
+
             with open(cited_refs_file, "rb") as h:
+
                 refs_tree = ET.parse(h)
                 refs_root = refs_tree.getroot()
                 cited_refs = []
+
                 for entry in refs_root:
+
                     ref = {"Year": entry.find("year").text, "Cited Work": ""}
+                    if ref["Year"] == "1000":
+                        ref["Year"] == ""
+
                     citedWork = entry.find("citedWork")
                     if citedWork is not None:
                         ref["Cited Work"] = citedWork.text
                     cited_refs.append(ref)
+
             paper["__cited references"] = cited_refs
 
             paper["__citing articles"] = ""
@@ -130,7 +159,8 @@ def parse_XML(csv_file):
 
 def print_grant_table(csv_file):
 
-    with open("WOS_scraping - data on DOE grants.csv", "wb") as g:
+    with open("WOS_scraping - data on DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
+
         writer = csv.writer(g, delimiter=',')
         data = parse_XML(csv_file)
 
@@ -142,6 +172,7 @@ def print_grant_table(csv_file):
 
         # Fill in values for grant data
         for grant in data:
+
             dictionary_tuples = sorted(grant.items(), key=lambda (k, v): k)[:-1]
             row = [field[1] for field in dictionary_tuples]
             writer.writerow(row)
@@ -149,22 +180,30 @@ def print_grant_table(csv_file):
 
 def print_pub_table(csv_file):
 
-    with open("WOS_scraping - papers citing DOE grants.csv", "wb") as g:
+    with open("WOS_scraping - papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
+
         writer = csv.writer(g, delimiter=',')
         data = parse_XML(csv_file)
 
-        # Write heading for paper data
-        example_paper = data[1]["__paper list"][0]
-        example_paper["DOE Grant Number"] = ""
-        heading_tuples = sorted(example_paper.items(), key=lambda (k, v): k)
+        # Write heading for paper data from dictionary keys, excluding "__cited refs" and "__citing articles"
+        example_grant = []
+        for item in data:
+            example_grant = item["__paper list"]
+            if example_grant:
+                break
+
+        example_paper = example_grant[0]
+        example_paper["Award Number"] = ""
+        heading_tuples = sorted(example_paper.items(), key=lambda (k, v): k)[:-2]
         fields = [field[0] for field in heading_tuples]
         writer.writerow(fields)
 
-        for i in range(len(data)):
+        for grant in data:
+
             # Fill in values for paper data
-            for paper in data[i]["__paper list"]:
-                paper["DOE Grant Number"] = data[i]["DOE Grant Number"]
-                dictionary_tuples = sorted(paper.items(), key=lambda (k, v): k)
+            for paper in grant["__paper list"]:
+                paper["Award Number"] = grant["Award Number"]
+                dictionary_tuples = sorted(paper.items(), key=lambda (k, v): k)[:-2]
                 row = [field[1] for field in dictionary_tuples]
                 writer.writerow(row)
 
