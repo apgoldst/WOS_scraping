@@ -5,12 +5,13 @@ import xml.etree.ElementTree as ET
 import csv
 
 
-csv_file = "DOE grant long list.csv"
+csv_file = "DOE grant short list.csv"
 ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
 
 # Save tables of data per publication and per grant
-save_tables.print_pub_table(csv_file)
-save_tables.print_grant_table(csv_file)
+# save_tables.print_pub_table(csv_file)
+# save_tables.print_grant_table(csv_file)
+# save_tables.print_cited_refs_table(csv_file)
 
 
 # data = []
@@ -48,20 +49,25 @@ save_tables.print_grant_table(csv_file)
 # item = static_data[2]
 # dynamic_data = record[2]
 
-# query = "FT = AR0000008 OR FT = AR 0000008"
+# query = "FT = SC0000957 OR FT = SC 0000957"
 # SID = wok_soap.auth()
 # print SID
-# SID = "1W6SAVZEJHuN9vRVo5N"
-#
+# SID = "1WEwqdk8PcphC1aOTiI"
+# #
 # search_result = wok_soap.search(query,SID)
 # queryId = search_result[0]
+# records_found = search_result[1]
+# results_list = search_result[3]
+# print len(results_list)
+#
+# print str(records_found) + " records found"
 # with open("search result.txt", "wb") as f:
 #     f.write(str(search_result))
 
 # retrieve_result = wok_soap.retrieve(queryId,SID,start_count=101)
 # with open("retrieve result.txt", "wb") as f:
 #     f.write(str(retrieve_result))
-#
+# #
 # # paper with 157 references
 # UID = "WOS:000275858200003"
 

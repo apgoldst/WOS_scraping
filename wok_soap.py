@@ -46,9 +46,7 @@ def search(query, SID):
     rparams = {'count': 100,
                'firstRecord': 1}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
     return client['search'].service.search(qparams, rparams)
 
@@ -70,9 +68,7 @@ def retrieveById(UID, SID):
     rparams = {'count': 1,
                'firstRecord': 1}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
     return client['retrieveById'].service.retrieveById(databaseId, uid, queryLanguage, rparams)
 
@@ -90,15 +86,16 @@ def citingArticles(UID, SID):
     databaseId = "WOS"
     uid = UID
     queryLanguage = "en"
+    editions = None
+    timeSpan = {'begin': "2009-04-01",
+                'end': "2015-12-31"}
 
-    rparams = {'count': 1,
+    rparams = {'count': 100,
                'firstRecord': 1}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
-    return client['citingArticles'].service.citingArticles(databaseId, uid, queryLanguage, rparams)
+    return client['citingArticles'].service.citingArticles(databaseId, uid, editions, timeSpan, queryLanguage, rparams)
 
 
 def retrieve(queryId, SID, start_count):
@@ -114,9 +111,7 @@ def retrieve(queryId, SID, start_count):
     rparams = {'count': 100,
                'firstRecord': start_count}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
     return client['retrieve'].service.retrieve(queryId, rparams)
 
@@ -138,9 +133,7 @@ def citedReferences(UID, SID):
     rparams = {'count': 100,
                'firstRecord': 1}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
     return client['citedReferences'].service.citedReferences(databaseId, uid, queryLanguage, rparams)
 
@@ -158,18 +151,28 @@ def citedReferencesRetrieve(queryId, SID, start_count):
     rparams = {'count': 100,
                'firstRecord': start_count}
 
-    end_time = time.time()
-    wait_time = 0.5 - (end_time - start_time)
-    time.sleep(wait_time)
+    # check_time(start_time)
 
     return client['citedReferencesRetrieve'].service.citedReferencesRetrieve(queryId, rparams)
 
 
-if __name__ == '__main__':
-    query = "FT = SC0004993 OR FT = SC 0004993"
-    SID = auth()
-    search_results = search(query, SID)
-    queryId = search_results[0]
-    start_count = 101
-    retrieve_results = retrieve(queryId, SID, start_count)
+def check_time(start_time):
+    end_time = time.time()
+    wait_time = 0.5 - (end_time - start_time)
+    time.sleep(wait_time)
 
+
+query = "FT = SC0004993 OR FT = SC 0004993"
+UID = "WOS:000346178800058"
+
+if __name__ == '__main__':
+    SID = auth()
+
+    # search_results = search(query, SID)
+    # queryId = search_results[0]
+    # start_count = 101
+    # retrieve_results = retrieve(queryId, SID, start_count)
+
+    citing_articles = citingArticles(UID, SID)
+    with open("citing articles result.txt", "wb") as f:
+        f.write(str(citing_articles))
