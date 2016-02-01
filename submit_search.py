@@ -48,7 +48,7 @@ def search_by_grant(csv_file, SID):
 
                 for hundred in range(retrieve_count):
                     start_count = (100*hundred) + 101
-                    more_results = wok_soap.retrieve(queryId, SID, start_count)
+                    more_results = wok_soap.retrieve(queryId, SID, start_count, "FullRecord")
 
                     [counter, SID] = counter_check(counter, SID)
                     more_results_unicode = more_results[0].encode('utf-8')
@@ -146,11 +146,11 @@ def search_for_citing_articles(UID, SID):
 
             for hundred in range(retrieve_count):
                 start_count = (100*hundred) + 101
-                more_results = wok_soap.retrieve(queryId, SID, start_count)
+                more_results = wok_soap.retrieve(queryId, SID, start_count, "Fields")
 
                 [counter, SID] = counter_check(counter, SID)
                 more_results_unicode = more_results[0].encode('utf-8')
-                results_unicode = results_unicode[:-10] + more_results_unicode[86:]
+                results_unicode = results_unicode[:-10] + more_results_unicode[82:]
 
         root = ET.fromstring(results_unicode)
         length = len(root)
@@ -178,7 +178,6 @@ UID = "WOS:000346178800058"
 
 if __name__ == '__main__':
     SID = wok_soap.auth()
-    counter = 0
-    # search_by_grant(csv_file, SID)
     search_for_citing_articles(UID, SID)
-    # counter_check(counter, SID)
+
+

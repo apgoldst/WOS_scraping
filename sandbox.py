@@ -6,12 +6,16 @@ import csv
 
 
 csv_file = "DOE grant short list.csv"
-ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
 
-# Save tables of data per publication and per grant
-# save_tables.print_pub_table(csv_file)
-# save_tables.print_grant_table(csv_file)
-# save_tables.print_cited_refs_table(csv_file)
+# print len(ns)
+#
+# SID = wok_soap.auth()
+# print SID
+
+SID = "2WK3NwAyUj4xxl6RWiM"
+UID = "WOS:000283490400005"
+
+submit_search.search_for_citing_articles(UID, SID)
 
 
 # data = []

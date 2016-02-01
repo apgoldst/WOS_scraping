@@ -111,8 +111,12 @@ def process_cited_refs(cited_refs_record):
                 ref["Year"] = ""
 
             citedWork = entry.find("citedWork")
+
             if citedWork is not None:
                 ref["Cited Work"] = citedWork.text.upper()
+
+                if citedWork.text[0:4] == "<IT>":
+                    ref["Cited Work"] = citedWork.text.upper()[4:-5]
 
             cited_refs.append(ref)
 
@@ -122,6 +126,7 @@ def process_cited_refs(cited_refs_record):
 def process_citing_articles(citing_articles_output):
 
     citing_articles_file = citing_articles_output[0]
+    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/Fields}"
 
     with open(citing_articles_file, "rb") as h:
 
@@ -190,6 +195,7 @@ def parse_XML(csv_file):
         with open(filename, "r+") as h:
             tree = ET.parse(h)
             root = tree.getroot()
+            print "parsing " + filename
 
         data[i]["Number of Publications"] = len(root)
         paper_list = []
@@ -200,11 +206,9 @@ def parse_XML(csv_file):
             paper = process_article(record)
 
             UID = paper["UID"]
-            cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
-            citing_articles_output = submit_search.search_for_citing_articles(UID, SID)
 
+            cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
             counter += cited_refs_output[1]
-            counter += citing_articles_output[1]
             if counter >= 2499:
                 SID = wok_soap.auth()
                 counter = 0
@@ -220,16 +224,22 @@ def parse_XML(csv_file):
                 same_journal_list = [y for y in journal_list if y == paper["Journal Title"]]
                 paper["Diversity Index"] = 1 - (len(same_journal_list) / float(len(journal_list)))
 
-            paper["__citing articles"] = process_citing_articles(citing_articles_output)
+            citing_articles_output = submit_search.search_for_citing_articles(UID, SID)
+            counter += citing_articles_output[1]
+            if counter >= 2499:
+                SID = wok_soap.auth()
+                counter = 0
 
+            paper["__citing articles"] = process_citing_articles(citing_articles_output)
 
             paper["Times Cited through 12-31-2015"] = len(paper["__citing articles"])
 
-            # # under development
-            # for year in range(4):
-            #     citations = [article["Publication Year"] for article in paper["__citing articles"]
-            #                  if int(article["Publication Year"]) == int(paper["Publication Year"])]
-            #     paper["Citations in Year " + str(year)] = len(citations)
+            for year in range(4):
+                paper["Citations in Year " + str(year)] = 0
+                citations = [article["Publication Year"] for article in paper["__citing articles"]
+                             if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
+                if citations:
+                    paper["Citations in Year " + str(year)] = len(citations)
 
             paper_list.append(paper)
 
@@ -240,6 +250,7 @@ def parse_XML(csv_file):
 
 def print_grant_table(data):
 
+    print "printing grant table"
     with open("WOS_scraping - data on DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
@@ -260,6 +271,7 @@ def print_grant_table(data):
 
 def print_pub_table(data):
 
+    print "printing publication table"
     with open("WOS_scraping - papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
@@ -289,6 +301,7 @@ def print_pub_table(data):
 
 def print_cited_refs_table(data):
 
+    print "printing cited references table"
     with open("WOS_scraping - cited refs in papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
@@ -302,34 +315,36 @@ def print_cited_refs_table(data):
 
                 for ref in paper["__cited references"]:
                     ref["Citing Article UID"] = paper["UID"]
-                    row = [ref["Citing Article UID"], ref["Year"], ref["Cited Work"]]
+                    row = [ref["Citing Article UID"], ref["Year"], ref["Cited Work"].encode('utf-8')]
                     writer.writerow(row)
 
 
 def print_citing_articles_table(data):
 
-    with open("WOS_scraping - articles citing papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
+    print "printing citing articles table"
+    with open("WOS_scraping - papers citing papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
 
-        writer.writerow(["Cited Article UID", "Year", "Citing Journal"])
+        writer.writerow(["Cited Article UID", "Publication Date", "Publication Year", "Journal Title", "Article Title"])
 
         for grant in data:
 
             # Fill in values for paper data
             for paper in grant["__paper list"]:
 
-                for ref in paper["__cited references"]:
-                    ref["Citing Article UID"] = paper["UID"]
-                    row = [ref["Citing Article UID"], ref["Year"], ref["Cited Work"]]
+                for cit in paper["__citing articles"]:
+                    cit["Citing Article UID"] = paper["UID"]
+                    row = [cit["Citing Article UID"], cit["Publication Date"], cit["Publication Year"],
+                           cit["Journal Title"], cit["Article Title"]]
                     writer.writerow(row)
 
 
-csv_file = "DOE grant short list.csv"
-ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
+csv_file = "DOE grant long list.csv"
 
 if __name__ == '__main__':
     data = parse_XML(csv_file)
     print_pub_table(data)
     print_grant_table(data)
     print_cited_refs_table(data)
+    print_citing_articles_table(data)
