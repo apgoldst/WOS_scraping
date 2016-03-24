@@ -10,6 +10,9 @@ import xml.etree.ElementTree as ET
 
 
 def search_by_grant(csv_file, SID):
+    directory = "grant search results xml"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     with open(csv_file, "rb") as h:
         text = csv.reader(h)
@@ -21,10 +24,15 @@ def search_by_grant(csv_file, SID):
     for i, cell in enumerate(grant_list):
         # Define query
         grant_number_full = cell
-        prefix = grant_number_full[3:5]
-        grant_number = grant_number_full[5:]
-        query = "FT = " + prefix + grant_number + " OR FT = " + prefix + " " + grant_number
-        filename = "grant search results xml/" + query + ".txt"
+        if grant_number_full[0:2] == "DE":
+            prefix = grant_number_full[3:5]
+            grant_number = grant_number_full[5:]
+            query = "FT = " + prefix + grant_number + " OR FT = " + prefix + " " + grant_number
+            filename = "grant search results xml/" + query + ".txt"
+        else:
+            query = "FT = " + grant_number_full
+            filename = "grant search results xml/" + query.replace("/","") + ".txt"
+
         file_list.append(filename)
 
         if not os.path.exists(filename):
@@ -67,6 +75,9 @@ def search_by_grant(csv_file, SID):
 
 
 def search_for_cited_refs(UID, SID):
+    directory = "cited references search results xml"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     filename = "cited references search results xml/" + UID[4:] + ".txt"
     # filename = "cited references testing/" + UID[4:] + ".txt"
@@ -119,6 +130,9 @@ def search_for_cited_refs(UID, SID):
 
 
 def search_for_citing_articles(UID, SID):
+    directory = "citing articles search results xml"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     filename = "citing articles search results xml/" + UID[4:] + ".txt"
     counter = 0

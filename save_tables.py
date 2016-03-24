@@ -6,6 +6,7 @@ import csv
 import submit_search
 import wok_soap
 import time
+from datetime import datetime as d
 
 
 def process_article(record):
@@ -167,7 +168,79 @@ def process_citing_articles(citing_articles_output):
     return citing_articles
 
 
-def parse_XML(csv_file):
+def citation_analysis(paper, SID, counter):
+    UID = paper["UID"]
+
+    cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
+    counter += cited_refs_output[1]
+    if counter >= 2499:
+        SID = wok_soap.auth()
+        counter = 0
+
+    paper["__cited references"] = process_cited_refs(cited_refs_output)
+
+    if paper["__cited references"]:
+        year_list = [int(ref["Year"]) for ref in paper["__cited references"] if ref["Year"] != ""]
+        average_year = sum(year_list) / float(len(year_list))
+        paper["Average Age of Reference"] = int(paper["Publication Year"]) - average_year
+
+        journal_list = [ref["Cited Work"] for ref in paper["__cited references"]]
+        same_journal_list = [y for y in journal_list if y == paper["Journal Title"]]
+        paper["Diversity Index"] = 1 - (len(same_journal_list) / float(len(journal_list)))
+
+    citing_articles_output = submit_search.search_for_citing_articles(UID, SID)
+    counter += citing_articles_output[1]
+    # if counter >= 2499:
+    #     SID = wok_soap.auth()
+    #     counter = 0
+
+    paper["__citing articles"] = process_citing_articles(citing_articles_output)
+
+    paper["Times Cited through 12-31-2015"] = len(paper["__citing articles"])
+
+    for year in range(-1, 4):
+        key = "Citations in Year " + str(year)
+
+        paper[key] = 0
+        citations = [article["Publication Year"] for article in paper["__citing articles"]
+                     if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
+
+        if citations:
+            paper["Citations in Year " + str(year)] = len(citations)
+
+    for year in range(4):
+        date_format = "%Y-%m-%d"
+        key = "Citations in month %s to %s" % (str((year-1)*12), str(year*12))
+
+        paper[key] = 0
+        citations_2 = []
+
+        for article in paper["__citing articles"]:
+            delta = d.strptime(article["Publication Date"], date_format) - d.strptime(paper["Publication Date"], date_format)
+            article["Cite Time"] = delta.days / float(365)
+            if year-1 < article["Cite Time"] <= year:
+                citations_2.append(article["Publication Date"])
+
+        if citations_2:
+            paper[key] = len(citations_2)
+
+    for year in range(2009, 2016):
+        key = "Citations in %s" % (str(year))
+
+        paper[key] = 0
+        citations_3 = []
+
+        for article in paper["__citing articles"]:
+            if int(article["Publication Year"]) == year:
+                citations_3.append(article["Publication Year"])
+
+        if citations_3:
+            paper[key] = len(citations_3)
+
+    return paper
+
+
+def construct_data(csv_file):
 
     # start session
     SID = wok_soap.auth()
@@ -205,42 +278,7 @@ def parse_XML(csv_file):
             record = root[rec]
             paper = process_article(record)
 
-            UID = paper["UID"]
-
-            cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
-            counter += cited_refs_output[1]
-            if counter >= 2499:
-                SID = wok_soap.auth()
-                counter = 0
-
-            paper["__cited references"] = process_cited_refs(cited_refs_output)
-
-            if paper["__cited references"]:
-                year_list = [int(ref["Year"]) for ref in paper["__cited references"] if ref["Year"] != ""]
-                average_year = sum(year_list) / float(len(year_list))
-                paper["Average Age of Reference"] = int(paper["Publication Year"]) - average_year
-
-                journal_list = [ref["Cited Work"] for ref in paper["__cited references"]]
-                same_journal_list = [y for y in journal_list if y == paper["Journal Title"]]
-                paper["Diversity Index"] = 1 - (len(same_journal_list) / float(len(journal_list)))
-
-            citing_articles_output = submit_search.search_for_citing_articles(UID, SID)
-            counter += citing_articles_output[1]
-            if counter >= 2499:
-                SID = wok_soap.auth()
-                counter = 0
-
-            paper["__citing articles"] = process_citing_articles(citing_articles_output)
-
-            paper["Times Cited through 12-31-2015"] = len(paper["__citing articles"])
-
-            for year in range(4):
-                paper["Citations in Year " + str(year)] = 0
-                citations = [article["Publication Year"] for article in paper["__citing articles"]
-                             if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
-                if citations:
-                    paper["Citations in Year " + str(year)] = len(citations)
-
+            paper = citation_analysis(paper, SID, counter)
             paper_list.append(paper)
 
         data[i]["__paper list"] = paper_list
@@ -248,10 +286,11 @@ def parse_XML(csv_file):
     return data
 
 
-def print_grant_table(data):
+def print_grant_table(data, csv_file):
 
     print "printing grant table"
-    with open("WOS_scraping - data on DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
+    with open("WOS_scraping - grant data - " + csv_file[:-4] + " - " +
+              time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
 
@@ -269,10 +308,11 @@ def print_grant_table(data):
             writer.writerow(row)
 
 
-def print_pub_table(data):
+def print_pub_table(data, csv_file):
 
     print "printing publication table"
-    with open("WOS_scraping - papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
+    with open("WOS_scraping - paper data - " + csv_file[:-4] + " - " +
+              time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
 
@@ -326,7 +366,7 @@ def print_citing_articles_table(data):
 
         writer = csv.writer(g, delimiter=',')
 
-        writer.writerow(["Cited Article UID", "Publication Date", "Publication Year", "Journal Title", "Article Title"])
+        writer.writerow(["Cited Article UID", "Publication Date", "Publication Year", "Journal Title", "Article Title", "Time of Citation"])
 
         for grant in data:
 
@@ -336,15 +376,15 @@ def print_citing_articles_table(data):
                 for cit in paper["__citing articles"]:
                     cit["Citing Article UID"] = paper["UID"]
                     row = [cit["Citing Article UID"], cit["Publication Date"], cit["Publication Year"],
-                           cit["Journal Title"], cit["Article Title"]]
+                           cit["Journal Title"], cit["Article Title"], cit["Cite Time"]]
                     writer.writerow(row)
 
 
-csv_file = "DOE grant long list.csv"
+csv_file = "ARPA-E awards.csv"
 
 if __name__ == '__main__':
-    data = parse_XML(csv_file)
-    print_pub_table(data)
-    print_grant_table(data)
-    print_cited_refs_table(data)
-    print_citing_articles_table(data)
+    data = construct_data(csv_file)
+    print_pub_table(data, csv_file)
+    print_grant_table(data, csv_file)
+    # print_cited_refs_table(data)
+    # print_citing_articles_table(data)
