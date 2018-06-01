@@ -17,6 +17,7 @@ def process_article(record):
     paper = {"UID": "",
              "Article Title": "",
              "DOI": "",
+             "Document Type": "",
              "Journal Title": "",
              "Publication Date": "",
              "Publication Year": "",
@@ -27,7 +28,7 @@ def process_article(record):
              "Number of Authors": 0,
              "Number of References": 0,
 
-             "Times Cited through 12-31-2015": 0,
+             "Times Cited through Search Period": 0,
              "Average Age of Reference": None,
              "Diversity Index": None}
 
@@ -54,13 +55,22 @@ def process_article(record):
     titles = summary.find(ns + "titles")
     article_title = titles.find("*[@type='item']").text
     paper["Article Title"] = article_title
+    
+    doctypes = summary.find(ns + "doctypes")
+    doctype = doctypes[0].text
+    paper["Document Type"] = doctype
 
     journal_title = titles.find("*[@type='source']").text
     paper["Journal Title"] = journal_title
 
     doi = dynamic_data.find(".//*[@type='doi']")
+    xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
     if doi is not None:
         doi = doi.attrib['value']
+    elif xref_doi is not None:
+        doi = xref_doi.attrib['value']
+    else:
+        doi = "NONE"
     paper["DOI"] = doi
 
     names = summary.find(ns + "names")
@@ -141,27 +151,46 @@ def process_citing_articles(citing_articles_output):
                      "Publication Year": "",
                      "Journal Title": "",
                      "Article Title": "",
-                     "UID": ""}
+                     "UID": "",
+                     "DOI": ""}
 
-            UID = record[0].text
+            # three top level sections of a record
+            UID = record[0]
             static_data = record[1]
+            dynamic_data = record[2]
+            
+            paper["UID"] = UID.text
+            
             summary = static_data[0]
-
-            paper["UID"] = UID
-
+            
+            # pull date and year from <summary> object
             pub_info = summary.find(ns + "pub_info")
+            
             date = pub_info.attrib['sortdate']
             paper["Publication Date"] = date
 
             year = pub_info.attrib['pubyear']
             paper["Publication Year"] = year
-
+            
+            # pull article and journal title from <summary> object
             titles = summary.find(ns + "titles")
+            
             article_title = titles.find("*[@type='item']").text
             paper["Article Title"] = article_title
 
             journal_title = titles.find("*[@type='source']").text
             paper["Journal Title"] = journal_title
+            
+            #pull DOI from dynamic data section
+            doi = dynamic_data.find(".//*[@type='doi']")
+            xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
+            if doi is not None:
+                doi = doi.attrib['value']
+            elif xref_doi is not None:
+                doi = xref_doi.attrib['value']
+            else: 
+                doi = "NONE"
+            paper["DOI"] = doi
 
             citing_articles.append(paper)
 
@@ -171,6 +200,7 @@ def process_citing_articles(citing_articles_output):
 def citation_analysis(paper, SID, counter):
     UID = paper["UID"]
 
+    # search for references cited in the paper
     cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
     counter += cited_refs_output[1]
     if counter >= 2499:
@@ -188,26 +218,28 @@ def citation_analysis(paper, SID, counter):
         same_journal_list = [y for y in journal_list if y == paper["Journal Title"]]
         paper["Diversity Index"] = 1 - (len(same_journal_list) / float(len(journal_list)))
 
+    # search for articles that cite the paper
     citing_articles_output = submit_search.search_for_citing_articles(UID, SID)
     counter += citing_articles_output[1]
-    # if counter >= 2499:
-    #     SID = wok_soap.auth()
-    #     counter = 0
 
     paper["__citing articles"] = process_citing_articles(citing_articles_output)
 
-    paper["Times Cited through 12-31-2015"] = len(paper["__citing articles"])
+    paper["Times Cited through Search Period"] = len(paper["__citing articles"])
 
-    for year in range(-1, 4):
+    # count citations in calendar years relative to the year of publication, up to year 13 inclusive
+    for year in range(-1, 14):
         key = "Citations in Year " + str(year)
 
         paper[key] = 0
+        citations = []
+        
         citations = [article["Publication Year"] for article in paper["__citing articles"]
                      if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
 
         if citations:
-            paper["Citations in Year " + str(year)] = len(citations)
+            paper[key] = len(citations)
 
+    # count citations in 12 month periods
     for year in range(4):
         date_format = "%Y-%m-%d"
         key = "Citations in month %s to %s" % (str((year-1)*12), str(year*12))
@@ -224,7 +256,8 @@ def citation_analysis(paper, SID, counter):
         if citations_2:
             paper[key] = len(citations_2)
 
-    for year in range(2009, 2016):
+    # count citations in calendar years 2003-2017 inclusive
+    for year in range(2003, 2018):
         key = "Citations in %s" % (str(year))
 
         paper[key] = 0
@@ -251,7 +284,7 @@ def construct_data(csv_file):
     grant_list = grants_and_files[0]
     file_list = grants_and_files[1]
 
-    # start new session after 2000 records have been processed
+    # start new session before 2500 records have been processed
     counter += grants_and_files[2]
     if counter >= 2499:
         SID = wok_soap.auth()
@@ -265,10 +298,10 @@ def construct_data(csv_file):
     for i, filename in enumerate(file_list):
 
         # open search results file and parse as XML
-        with open(filename, "r+") as h:
+        with open(filename, "rb") as h:
             tree = ET.parse(h)
             root = tree.getroot()
-            print "parsing " + filename
+            print("parsing " + filename)
 
         data[i]["Number of Publications"] = len(root)
         paper_list = []
@@ -288,7 +321,7 @@ def construct_data(csv_file):
 
 def print_grant_table(data, csv_file):
 
-    print "printing grant table"
+    print("printing grant table")
     with open("WOS_scraping - grant data - " + csv_file[:-4] + " - " +
               time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
@@ -296,36 +329,39 @@ def print_grant_table(data, csv_file):
 
         # Write heading for grant data from dictionary keys, excluding "__paper list"
         example_grant = data[0]
-        heading_tuples = sorted(example_grant.items(), key=lambda (k, v): k)[:-1]
+        heading_tuples = sorted(list(example_grant.items()), key=lambda k: k[0])[:-1]
         fields = [field[0] for field in heading_tuples]
         writer.writerow(fields)
 
         # Fill in values for grant data
         for grant in data:
 
-            dictionary_tuples = sorted(grant.items(), key=lambda (k, v): k)[:-1]
+            dictionary_tuples = sorted(list(grant.items()), key=lambda k: k[0])[:-1]
             row = [field[1] for field in dictionary_tuples]
             writer.writerow(row)
 
 
 def print_pub_table(data, csv_file):
 
-    print "printing publication table"
+    print("printing publication table")
     with open("WOS_scraping - paper data - " + csv_file[:-4] + " - " +
-              time.strftime("%d %b %Y") + ".csv", "wb") as g:
+              time.strftime("%d %b %Y") + ".csv", "w") as g:
 
         writer = csv.writer(g, delimiter=',')
 
-        # Write heading for paper data from dictionary keys, excluding "__cited refs" and "__citing articles"
+       # select one example grant 
         example_grant = []
         for item in data:
             example_grant = item["__paper list"]
             if example_grant:
                 break
-
+            
+        # Write heading for paper data from dictionary keys
+        # excluding "__cited refs" and "__citing articles", which sort to the end
         example_paper = example_grant[0]
+        # add a new key for the award number associated with the paper
         example_paper["Award Number"] = ""
-        heading_tuples = sorted(example_paper.items(), key=lambda (k, v): k)[:-2]
+        heading_tuples = sorted(list(example_paper.items()), key=lambda k: k[0])[:-2]
         fields = [field[0] for field in heading_tuples]
         writer.writerow(fields)
 
@@ -334,14 +370,65 @@ def print_pub_table(data, csv_file):
             # Fill in values for paper data
             for paper in grant["__paper list"]:
                 paper["Award Number"] = grant["Award Number"]
-                dictionary_tuples = sorted(paper.items(), key=lambda (k, v): k)[:-2]
+                dictionary_tuples = sorted(list(paper.items()), key=lambda k: k[0])[:-2]
                 row = [field[1] for field in dictionary_tuples]
                 writer.writerow(row)
+                
+                
+def print_pub_table_from_DOIs(csv_file):
 
+    # start session
+    SID = wok_soap.auth()
+    counter = 0
+
+    # run search to output list of search results file names
+    search_output = submit_search.search_by_DOI(csv_file, SID)
+    file_list = search_output[0]
+    counter = search_output[1]
+    print("found " + str(len(file_list)) + " files")
+
+    paper_list = []
+
+    # loop through each entry in the list of files found
+    for i, filename in enumerate(file_list):
+        
+        # open search results file and parse as XML
+        with open(filename) as h:
+            tree = ET.parse(h)
+            root = tree.getroot()
+        
+        # if the file is not empty, process the record
+        if root:
+            record = root[0]
+            paper = process_article(record)
+            paper = citation_analysis(paper, SID, counter)
+            print("parsed " + filename)
+            paper_list.append(paper)
+        else:
+            print("no paper found")
+        
+    print("printing publication table")
+    with open("WOS_scraping - " + csv_file[:-4] + " - " +
+              time.strftime("%d %b %Y") + ".csv", "w") as g:
+
+        writer = csv.writer(g, delimiter=',')
+        
+        example_paper = paper_list[0]
+        heading_tuples = sorted(example_paper.items(), key=lambda k: k[0])[:-2]
+        heading = [field[0] for field in heading_tuples]
+        writer.writerow(heading)
+        
+        # Fill in values for paper data
+        for paper in paper_list:
+            print("writing row for " + paper["DOI"])
+            dictionary_tuples = sorted(paper.items(), key=lambda k: k[0])[:-2]
+            row = [field[1] for field in dictionary_tuples]
+            writer.writerow(row)
+        
 
 def print_cited_refs_table(data):
 
-    print "printing cited references table"
+    print("printing cited references table")
     with open("WOS_scraping - cited refs in papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
@@ -361,7 +448,7 @@ def print_cited_refs_table(data):
 
 def print_citing_articles_table(data):
 
-    print "printing citing articles table"
+    print("printing citing articles table")
     with open("WOS_scraping - papers citing papers citing DOE grants - " + time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
         writer = csv.writer(g, delimiter=',')
@@ -380,11 +467,13 @@ def print_citing_articles_table(data):
                     writer.writerow(row)
 
 
-csv_file = "ARPA-E awards.csv"
 
 if __name__ == '__main__':
-    data = construct_data(csv_file)
-    print_pub_table(data, csv_file)
-    print_grant_table(data, csv_file)
-    # print_cited_refs_table(data)
-    # print_citing_articles_table(data)
+    
+    csv_file = "Publication list for WOS search.csv"
+
+    print_pub_table_from_DOIs(csv_file)
+
+#    print_pub_table(data, csv_file)
+#    print_grant_table(data, csv_file)
+
