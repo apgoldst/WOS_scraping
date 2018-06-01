@@ -1,15 +1,15 @@
 # Author: Anna Goldstein
-# A different version of wok_soap, where authentication and searching are separate functions.
-# This allows the same session to remain open and avoid the maximum of 5 new sessions per 5 minutes
+# A version of wok_soap with separate functions for authentication and searching
+# This script allows the same session to remain open and avoids being limited by the maximum of 5 new sessions per 5 minutes
 
 
 from suds.client import Client
 from suds.transport.http import HttpTransport
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import time
 
 
-class HTTPSudsPreprocessor(urllib2.BaseHandler):
+class HTTPSudsPreprocessor(urllib.request.BaseHandler):
     def __init__(self, SID):
         self.SID = SID
 
@@ -26,15 +26,17 @@ def auth():
     url['auth'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate?wsdl'
     client['auth'] = Client(url['auth'])
     SID = client['auth'].service.authenticate()
+    print(SID)
     return SID
 
 
+# perform search using any query and return a query ID
 def search(query, SID):
     url = client = {}
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['search'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['search'] = Client(url['search'], transport=http)
@@ -51,12 +53,13 @@ def search(query, SID):
     return client['search'].service.search(qparams, rparams)
 
 
+# perform search on one or more database identifiers and return the record(s)
 def retrieveById(UID, SID):
     url = client = {}
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['retrieveById'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['retrieveById'] = Client(url['retrieveById'], transport=http)
@@ -73,12 +76,13 @@ def retrieveById(UID, SID):
     return client['retrieveById'].service.retrieveById(databaseId, uid, queryLanguage, rparams)
 
 
+# search for citing articles in a given time period
 def citingArticles(UID, SID):
     url = client = {}
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['citingArticles'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['citingArticles'] = Client(url['citingArticles'], transport=http)
@@ -87,8 +91,8 @@ def citingArticles(UID, SID):
     uid = UID
     queryLanguage = "en"
     editions = None
-    timeSpan = {'begin': "2009-04-01",
-                'end': "2015-12-31"}
+    timeSpan = {'begin': "2003-01-01",
+                'end': "2017-12-31"}
 
     rparams = {'count': 100,
                'firstRecord': 1,
@@ -100,12 +104,13 @@ def citingArticles(UID, SID):
     return client['citingArticles'].service.citingArticles(databaseId, uid, editions, timeSpan, queryLanguage, rparams)
 
 
+# retrieve records from a previous search
 def retrieve(queryId, SID, start_count, namespace):
     url = client = {}
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['retrieve'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['retrieve'] = Client(url['retrieve'], transport=http)
@@ -130,7 +135,7 @@ def citedReferences(UID, SID):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['citedReferences'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['citedReferences'] = Client(url['citedReferences'], transport=http)
@@ -152,7 +157,7 @@ def citedReferencesRetrieve(queryId, SID, start_count):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib2.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
     http.urlopener = opener
     url['citedReferencesRetrieve'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['citedReferencesRetrieve'] = Client(url['citedReferencesRetrieve'], transport=http)
@@ -172,19 +177,26 @@ def check_time(start_time):
         time.sleep(wait_time)
 
 
-query = "FT = SC0004993 OR FT = SC 0004993"
-UID = "WOS:000283490400005"
+
+
 
 if __name__ == '__main__':
+    
+#test script with example search
+    
     SID = auth()
 
+    UID = "WOS:000283490400005"
+    
     citing_articles = citingArticles(UID, SID)
     queryId = citing_articles[0]
+    print(citing_articles)
 
-    with open("citing articles result_2.txt", "wb") as f:
-        f.write(str(citing_articles))
-
-    retrieve = retrieve(queryId, SID, start_count=101)
-
-    with open("retrieve result_2.txt", "wb") as f:
-        f.write(str(retrieve))
+#    with open("citing articles result_2.txt", "wb") as f:
+#        f.write(str(citing_articles))
+#
+#    retrieve = retrieve(queryId, SID, start_count=101)
+#
+#    with open("retrieve result_2.txt", "wb") as f:
+#        f.write(str(retrieve))
+#    query = "FT = SC0004993 OR FT = SC 0004993"
