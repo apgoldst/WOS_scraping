@@ -8,7 +8,8 @@ import wok_soap
 import time
 from datetime import datetime as d
 
-
+# it's me, neosha
+# another comment 
 def process_article(record):
 
     ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
