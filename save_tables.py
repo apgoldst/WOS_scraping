@@ -471,9 +471,10 @@ def print_citing_articles_table(data):
 
 if __name__ == '__main__':
     
-    csv_file = "example DOIs.csv"
+    csv_file = "example grants.csv"
+    data = construct_data(csv_file)
 
-    print_pub_table_from_DOIs(csv_file)
+    print_pub_table(data, csv_file)
 
 #    print_pub_table(data, csv_file)
 #    print_grant_table(data, csv_file)

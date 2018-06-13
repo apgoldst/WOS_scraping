@@ -36,21 +36,21 @@ def search(query, SID):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID)) #build_opener returns an OpenerDirector instance
     http.urlopener = opener
     url['search'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['search'] = Client(url['search'], transport=http)
 
     qparams = {'databaseId': 'WOS',
                'userQuery': query,
-               'queryLanguage': 'en'}
+               'queryLanguage': 'en'} # parameters of our query. there are optional parameters such as time etc
 
     rparams = {'count': 100,
                'firstRecord': 1}
 
     check_time(start_time)
 
-    return client['search'].service.search(qparams, rparams)
+    return client['search'].service.search(qparams, rparams) # constructs query and returns list ish thing with id as first element, result, etc.
 
 
 # perform search on one or more database identifiers and return the record(s)

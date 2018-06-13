@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 # search for publications by grant number acknowledged
 # input is a CSV list of grants, with no header row and grant numbers in column A
-def search_by_grant(csv_file, SID):
+def search_by_grant(csv_file, SID): # SID = session ID
     directory = "grant search results xml"
     if not os.path.exists(directory): # if the directory doesn't already exist, make one
         os.makedirs(directory)
@@ -24,7 +24,7 @@ def search_by_grant(csv_file, SID):
     counter = 0
 
     for i, cell in enumerate(grant_list): #enumerate pulls out index (i) and content (cell) in the list
-       #could be- for cell in grant_list:
+       #could be- for cell in grant_list: (because i is not used)
         # Define query
         grant_number_full = cell
         if grant_number_full[0:2] == "DE":
@@ -65,7 +65,7 @@ def search_by_grant(csv_file, SID):
                     more_results_unicode = more_results[0].encode('utf-8')
                     results_unicode = results_unicode[:-10] + more_results_unicode[86:]
 
-            root = ET.fromstring(results_unicode) # ET = element tree 
+            root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
             length = len(root)
             if length != results_count:
                 raise # throw error message
@@ -74,7 +74,8 @@ def search_by_grant(csv_file, SID):
             with open(filename, "w") as f:
                 f.write(results_unicode)
 
-    return [grant_list, file_list, counter]
+    return [grant_list, file_list, counter] #subscription allows only 2500 records/session. 
+#returning counter allows us to see if we are reaching limit per session so we can start new session
 
 
 # search for publications by DOI (or WOS if no DOI exists)
@@ -89,7 +90,7 @@ def search_by_DOI(csv_file, SID):
         doi_list = [row[0] for row in text]
 
     file_list = []
-    counter = 0
+    counter = 0 # Establishes directory just like previous function
 
     for i, cell in enumerate(doi_list):
        
@@ -107,7 +108,7 @@ def search_by_DOI(csv_file, SID):
         filename = "DOI search results xml/" + query.replace("/"," ").replace('"',"") + ".txt"
         file_list.append(filename)
 
-        if not os.path.exists(filename):
+        if not os.path.exists(filename): # a much simpler search than Grant because each paper has unique DOI
             print(query)
 
             # Search on WOS
@@ -115,7 +116,7 @@ def search_by_DOI(csv_file, SID):
             [counter, SID] = counter_check(counter, SID)
 
             # Interpret raw search results stored in 4th line of object
-            results_unicode = results[3]
+            results_unicode = results[3] 
 
             # Write raw search results to txt file
             with open(filename, "w") as f:
@@ -124,8 +125,8 @@ def search_by_DOI(csv_file, SID):
     return [file_list, counter]
 
 
-def search_for_cited_refs(UID, SID):
-    directory = "cited references search results xml"
+def search_for_cited_refs(UID, SID): # Searches for all the references cited in one paper given that paper's UID
+    directory = "cited references search results xml" #Creates another directory again
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -144,15 +145,15 @@ def search_for_cited_refs(UID, SID):
         queryId = results[0]
         results_list = results[1]
 
-        root = ET.Element("root")
-        tree = ET.ElementTree(root)
+        root = ET.Element("root") # creates a root Element object
+        tree = ET.ElementTree(root) # creates a tree using the root Element
         results_count = 0
 
         if results_list != 0:
-            results_count = results[2]
+            results_count = results[2] # number of results is in the third index of results
 
-            if results_count > 100:
-                retrieve_count = (results_count // 100)
+            if results_count > 100: # all of this is necessary because we can only go through 100 records at a time
+                retrieve_count = (results_count // 100) 
 
                 if results_count % 100 == 0:
                     retrieve_count -= 1
@@ -165,7 +166,7 @@ def search_for_cited_refs(UID, SID):
                     results_list = results_list + more_results
 
             # Put search results in XML format
-            for item in results_list:
+            for item in results_list: 
                 ref = ET.SubElement(root, "cited_ref")
                 ET.SubElement(ref, "year").text = item.year
                 if hasattr(item, "citedWork"):
@@ -229,7 +230,7 @@ def search_for_citing_articles(UID, SID):
 
 def counter_check(counter, SID):
     counter += 1
-    if counter >= 2499:
+    if counter >= 2499: # Because can only get 2500 records in a given session
         SID = wok_soap.auth()
         counter = 0
 
