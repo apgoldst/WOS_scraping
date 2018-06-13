@@ -8,6 +8,7 @@ import wok_soap
 import time
 from datetime import datetime as d
 
+# it's me, neosha
 
 def process_article(record):
 
