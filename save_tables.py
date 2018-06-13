@@ -7,12 +7,12 @@ import submit_search
 import wok_soap
 import time
 from datetime import datetime as d
+import metaknowledge as mk
 
-# it's me, neosha
-# another comment 
-def process_article(record):
 
-    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
+def process_article(record): 
+
+    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}" #going to this site does gives a 404 error
 
     # construct a dictionary to hold publication data
     paper = {"UID": "",
@@ -33,7 +33,7 @@ def process_article(record):
              "Average Age of Reference": None,
              "Diversity Index": None}
 
-    UID = record[0].text
+    UID = record[0].text # the first item in "record"
     paper["UID"] = UID
 
     # Assign variables to segments of the record
