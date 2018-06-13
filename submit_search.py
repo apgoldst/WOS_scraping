@@ -13,18 +13,18 @@ import xml.etree.ElementTree as ET
 # input is a CSV list of grants, with no header row and grant numbers in column A
 def search_by_grant(csv_file, SID):
     directory = "grant search results xml"
-    if not os.path.exists(directory):
+    if not os.path.exists(directory): # if the directory doesn't already exist, make one
         os.makedirs(directory)
 
     with open(csv_file) as h:
         text = csv.reader(h)
-        grant_list = [row[0] for row in text]
+        grant_list = [row[0] for row in text] # puts first cell in each row as a grant member in grant_list
 
     file_list = []
     counter = 0
 
-    for i, cell in enumerate(grant_list):
-       
+    for i, cell in enumerate(grant_list): #enumerate pulls out index (i) and content (cell) in the list
+       #could be- for cell in grant_list:
         # Define query
         grant_number_full = cell
         if grant_number_full[0:2] == "DE":
@@ -49,7 +49,7 @@ def search_by_grant(csv_file, SID):
             results_count = results[1]
 
             # Interpret raw search results stored in 4th line of object
-            results_unicode = results[3]
+            results_unicode = results[3] #actually contains results of search
 
             if results_count > 100:
                 retrieve_count = (results_count // 100)
@@ -65,10 +65,10 @@ def search_by_grant(csv_file, SID):
                     more_results_unicode = more_results[0].encode('utf-8')
                     results_unicode = results_unicode[:-10] + more_results_unicode[86:]
 
-            root = ET.fromstring(results_unicode)
+            root = ET.fromstring(results_unicode) # ET = element tree 
             length = len(root)
             if length != results_count:
-                raise
+                raise # throw error message
 
             # Write raw search results to txt file
             with open(filename, "w") as f:
