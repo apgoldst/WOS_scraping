@@ -43,14 +43,14 @@ def process_article(record):
     item = static_data[2]
     dynamic_data = record[2]
 
-    pub_info = summary.find(ns + "pub_info")
+    pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month
     date = pub_info.attrib['sortdate']
     paper["Publication Date"] = date
 
-    year = pub_info.attrib['pubyear']
+    year = pub_info.attrib['pubyear'] # metaknowledge: WOS.year(val)
     paper["Publication Year"] = year
 
-    page_count = pub_info.find(ns + "page").attrib['page_count']
+    page_count = pub_info.find(ns + "page").attrib['page_count'] # can use WOS.endingPage and WOS.beginningPage
     paper["Number of Pages"] = page_count
 
     titles = summary.find(ns + "titles")
@@ -471,7 +471,7 @@ def print_citing_articles_table(data):
 
 if __name__ == '__main__':
     
-    csv_file = "Publication list for WOS search.csv"
+    csv_file = "example DOIs.csv"
 
     print_pub_table_from_DOIs(csv_file)
 
