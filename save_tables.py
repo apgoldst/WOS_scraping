@@ -10,6 +10,8 @@ from datetime import datetime as d
 import metaknowledge as mk
 
 
+
+# Constructs and returns a dictionary to hold publication data, given a record
 def process_article(record): 
 
     ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}" #going to this site does gives a 404 error
@@ -41,9 +43,9 @@ def process_article(record):
     summary = static_data[0]
     fullrecord_metadata = static_data[1]
     item = static_data[2]
-    dynamic_data = record[2]
+    dynamic_data = record[2] # dynamic data is the third entry in the record
 
-    pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month
+    pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month in metaknowledge
     date = pub_info.attrib['sortdate']
     paper["Publication Date"] = date
 
@@ -63,24 +65,26 @@ def process_article(record):
 
     journal_title = titles.find("*[@type='source']").text
     paper["Journal Title"] = journal_title
-
-    doi = dynamic_data.find(".//*[@type='doi']")
+    
+    
+    
+    doi = dynamic_data.find(".//*[@type='doi']") 
     xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
     if doi is not None:
-        doi = doi.attrib['value']
-    elif xref_doi is not None:
+        doi = doi.attrib['value'] # doi.attrib is a dictionary, a field of the Element interface
+    elif xref_doi is not None: # ln 72 assigns the doi to "value" key in the .attrib dictionary
         doi = xref_doi.attrib['value']
-    else:
+    else: 
         doi = "NONE"
     paper["DOI"] = doi
 
-    names = summary.find(ns + "names")
+    names = summary.find(ns + "names") # .find() returns a list of Element objects/interfaces
     author_list = []
     author_count = 0
     for name in names:
         if name.attrib['role'] == "author":
-            full_name = name.find(ns + "full_name").text
-            author_list.append(full_name)
+            full_name = name.find(ns + "full_name").text # look for the author's full name
+            author_list.append(full_name) # add the full name to the list
             author_count += 1
 
     paper["Authors"] = author_list
@@ -104,40 +108,43 @@ def process_article(record):
     return paper
 
 
+# process backward references
 def process_cited_refs(cited_refs_record):
 
-    cited_refs_file = cited_refs_record[0]
+    cited_refs_file = cited_refs_record[0] # first element cited_refs_record
 
-    with open(cited_refs_file, "rb") as h:
+    with open(cited_refs_file, "rb") as h: # "rb" opens file and returns file object in binary mode
 
-        tree = ET.parse(h)
-        root = tree.getroot()
+        tree = ET.parse(h) # parse h, the file object
+        root = tree.getroot() # root contains all of the cited references?
         cited_refs = []
 
         for entry in root:
-
+            
             ref = {"Year": entry.find("year").text,
-                   "Cited Work": ""}
+                   "Cited Work": ""} # constructs dictionary called ref
 
-            if ref["Year"] == "1000":
+            if ref["Year"] == "1000": # to deal with issue of no date being returned as year 1000
                 ref["Year"] = ""
 
-            citedWork = entry.find("citedWork")
+            citedWork = entry.find("citedWork") # finds the work cited in the entry
 
             if citedWork is not None:
-                ref["Cited Work"] = citedWork.text.upper()
+                ref["Cited Work"] = citedWork.text.upper() #all caps
 
-                if citedWork.text[0:4] == "<IT>":
-                    ref["Cited Work"] = citedWork.text.upper()[4:-5]
+                if citedWork.text[0:4] == "<IT>": # look for <IT> tag
+                    ref["Cited Work"] = citedWork.text.upper()[4:-5] # remove <IT> tag in front and back
 
             cited_refs.append(ref)
-
+    
     return cited_refs
 
 
+# process forward references- more complicated than previous function because
+    #WOS collects more data from forward referencesd
 def process_citing_articles(citing_articles_output):
 
-    citing_articles_file = citing_articles_output[0]
+    citing_articles_file = citing_articles_output[0] # filename
     ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/Fields}"
 
     with open(citing_articles_file, "rb") as h:

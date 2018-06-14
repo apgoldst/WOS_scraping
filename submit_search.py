@@ -224,7 +224,7 @@ def search_for_citing_articles(UID, SID):
         # Write raw search results to txt file
         with open(filename, "w") as f:
             f.write(results_unicode)
-
+    
     return [filename, counter]
 
 

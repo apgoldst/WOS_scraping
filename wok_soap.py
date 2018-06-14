@@ -26,7 +26,8 @@ def auth():
     url['auth'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate?wsdl'
     client['auth'] = Client(url['auth'])
     SID = client['auth'].service.authenticate()
-    print(SID)
+
+    #print(SID)
     return SID
 
 
