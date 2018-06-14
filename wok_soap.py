@@ -59,19 +59,19 @@ def retrieveById(UID, SID):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
-    http.urlopener = opener
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID)) #build_opener returns OpenerDirector object
+    http.urlopener = opener #hands OpenerDirector object to http
     url['retrieveById'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['retrieveById'] = Client(url['retrieveById'], transport=http)
 
-    databaseId = "WOS"
+    databaseId = "WOS" # qparams?!
     uid = UID
     queryLanguage = "en"
 
-    rparams = {'count': 1,
+    rparams = {'count': 1, # retrieve 1 result instead of 100
                'firstRecord': 1}
 
-    check_time(start_time)
+    check_time(start_time) #where does this come from?!
 
     return client['retrieveById'].service.retrieveById(databaseId, uid, queryLanguage, rparams)
 
