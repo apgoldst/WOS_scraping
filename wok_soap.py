@@ -77,7 +77,7 @@ def retrieveById(UID, SID):
 
 
 # search for citing articles in a given time period
-def citingArticles(UID, SID):
+def citingArticles(UID, SID, begDate, endDate):
     url = client = {}
     start_time = time.time()
 
@@ -91,8 +91,8 @@ def citingArticles(UID, SID):
     uid = UID
     queryLanguage = "en"
     editions = None
-    timeSpan = {'begin': "2003-01-01",
-                'end': "2017-12-31"}
+    timeSpan = {'begin': begDate, # 2003-01-01
+                'end': endDate} # 2017-12-31
 
     rparams = {'count': 100,
                'firstRecord': 1,
