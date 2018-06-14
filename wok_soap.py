@@ -117,7 +117,7 @@ def retrieve(queryId, SID, start_count, namespace):
 
     if namespace == "FullRecord":
         rparams = {'count': 100,
-                   'firstRecord': start_count}
+                   'firstRecord': start_count} # eg, whether to start at record 1, 101, 201, to fetch extra records
 
     else:
         rparams = {'count': 100,
@@ -125,11 +125,12 @@ def retrieve(queryId, SID, start_count, namespace):
                    'viewField': {'collectionName': 'WOS',
                                  'fieldName': ['pub_info', 'titles']}}
 
-    check_time(start_time)
+    check_time(start_time) # check_time() is defined below
 
     return client['retrieve'].service.retrieve(queryId, rparams)
 
 
+# Returns records of all references cited within a paper with a given UID.
 def citedReferences(UID, SID):
     url = client = {}
     start_time = time.time()
@@ -188,7 +189,12 @@ if __name__ == '__main__':
 
     UID = "WOS:000283490400005"
     
-    citing_articles = citingArticles(UID, SID)
+    
+    # random dates input by neosha
+    begDate = "2004-07-09"
+    endDate = "2015-01-01"
+    
+    citing_articles = citingArticles(UID, SID, begDate, endDate)
     queryId = citing_articles[0]
     print(citing_articles)
 
