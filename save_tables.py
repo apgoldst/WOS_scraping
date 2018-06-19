@@ -215,9 +215,9 @@ def citation_analysis(paper, SID, counter):
         SID = wok_soap.auth()
         counter = 0
 
-    paper["__cited references"] = process_cited_refs(cited_refs_output)
+    paper["__cited references"] = process_cited_refs(cited_refs_output) # add key, value pair to paper dict
 
-    if paper["__cited references"]:
+    if paper["__cited references"]: #!!!
         year_list = [int(ref["Year"]) for ref in paper["__cited references"] if ref["Year"] != ""]
         average_year = sum(year_list) / float(len(year_list))
         paper["Average Age of Reference"] = int(paper["Publication Year"]) - average_year
@@ -255,7 +255,7 @@ def citation_analysis(paper, SID, counter):
         paper[key] = 0
         citations_2 = []
 
-        for article in paper["__citing articles"]:
+        for article in paper["__citing articles"]: # strptime() converts to date_format
             delta = d.strptime(article["Publication Date"], date_format) - d.strptime(paper["Publication Date"], date_format)
             article["Cite Time"] = delta.days / float(365)
             if year-1 < article["Cite Time"] <= year:
@@ -333,11 +333,11 @@ def print_grant_table(data, csv_file):
     with open("WOS_scraping - grant data - " + csv_file[:-4] + " - " +
               time.strftime("%d %b %Y") + ".csv", "wb") as g:
 
-        writer = csv.writer(g, delimiter=',')
+        writer = csv.writer(g, delimiter=',') # create writer object which converts csv to delimited strings
 
         # Write heading for grant data from dictionary keys, excluding "__paper list"
         example_grant = data[0]
-        heading_tuples = sorted(list(example_grant.items()), key=lambda k: k[0])[:-1]
+        heading_tuples = sorted(list(example_grant.items()), key=lambda k: k[0])[:-1] 
         fields = [field[0] for field in heading_tuples]
         writer.writerow(fields)
 
@@ -358,19 +358,19 @@ def print_pub_table(data, csv_file):
         writer = csv.writer(g, delimiter=',')
 
        # select one example grant 
-        example_grant = []
+        example_grant = [] #  
         for item in data:
-            example_grant = item["__paper list"]
-            if example_grant:
+            example_grant = item["__paper list"] # example_grant = list of papers
+            if example_grant: # check if example_grant is not empty
                 break
             
         # Write heading for paper data from dictionary keys
         # excluding "__cited refs" and "__citing articles", which sort to the end
-        example_paper = example_grant[0]
+        example_paper = example_grant[0] # sets example_paper = to first paper in __paper list
         # add a new key for the award number associated with the paper
         example_paper["Award Number"] = ""
         heading_tuples = sorted(list(example_paper.items()), key=lambda k: k[0])[:-2]
-        fields = [field[0] for field in heading_tuples]
+        fields = [field[0] for field in heading_tuples] # whaaaaa
         writer.writerow(fields)
 
         for grant in data:
