@@ -9,16 +9,38 @@ import wok_soap
 import xml.etree.ElementTree as ET
 
 
+
+def searchByGrantOrDOI(csv_file, SID):
+    directory = "search by grant or doi xml"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    
+    # need some way to distinguish between grant search and doi search
+    with open(csv_file) as h:
+        text = csv.reader(h);
+        resultList = [row[0] for row in text]
+        
+        
+    file_list = []
+    counter = 0
+        
+    for cell in enumerate(resultList):
+        print("hello")
+        
+        
+        
 # search for publications by grant number acknowledged
 # input is a CSV list of grants, with no header row and grant numbers in column A
-def search_by_grant(csv_file, SID): # SID = session ID
+def search_by_grant(csv_file, SID):
+    
     directory = "grant search results xml"
     if not os.path.exists(directory): # if the directory doesn't already exist, make one
         os.makedirs(directory)
 
     with open(csv_file) as h:
         text = csv.reader(h)
-        grant_list = [row[0] for row in text] # puts first cell in each row as a grant member in grant_list
+        grant_list = [row[0] for row in text]# puts first cell in each row as a grant member in grant_list
+        print("grant list = " + str(grant_list))
 
     file_list = []
     counter = 0
@@ -244,6 +266,10 @@ if __name__ == '__main__':
     csv_file = "example DOIs.csv"
     file_list = search_by_DOI(csv_file, SID)
     print(file_list[0])
+    
+    csv_2 = "example grants.csv"
+    fileList2 = search_by_grant(csv_2, SID)
+    print("example grants and " + str(fileList2[0]))
     
 #    UID = "WOS:000283490400005"
 #    

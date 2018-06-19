@@ -27,11 +27,16 @@ def process_article(record):
              "Authors": "",
              "Abstract": "",
              "Keywords": "",
-             "Number of Pages": 0,
+             
+             # could get rid of next 3 (not used)
+             "Number of Pages": 0, 
              "Number of Authors": 0,
              "Number of References": 0,
-
+                
+             # could be added to dict later
              "Times Cited through Search Period": 0,
+             
+             # could get rid of these
              "Average Age of Reference": None,
              "Diversity Index": None}
 
@@ -141,11 +146,11 @@ def process_cited_refs(cited_refs_record):
 
 
 # process forward references- more complicated than previous function because
-    #WOS collects more data from forward referencesd
+    #WOS collects more data from forward references
 def process_citing_articles(citing_articles_output):
 
     citing_articles_file = citing_articles_output[0] # filename
-    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/Fields}"
+    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/Fields}" # ns = namespace
 
     with open(citing_articles_file, "rb") as h:
 
@@ -153,6 +158,7 @@ def process_citing_articles(citing_articles_output):
         root = tree.getroot()
         citing_articles = []
 
+        # call process_article here?? process_article looks for a lot more dict keys
         for record in root:
 
             paper = {"Publication Date": "",
@@ -232,22 +238,23 @@ def citation_analysis(paper, SID, counter):
 
     paper["__citing articles"] = process_citing_articles(citing_articles_output)
 
-    paper["Times Cited through Search Period"] = len(paper["__citing articles"])
+    paper["Times Cited through Search Period"] = len(paper["__citing articles"]) # gets # of papers in __citing articles key
 
     # count citations in calendar years relative to the year of publication, up to year 13 inclusive
     for year in range(-1, 14):
         key = "Citations in Year " + str(year)
 
         paper[key] = 0
-        citations = []
+        citations = [] # list of articles 
         
-        citations = [article["Publication Year"] for article in paper["__citing articles"]
-                     if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
+        citations = [entry["Publication Year"] for entry in paper["__citing articles"]
+                     if int(entry["Publication Year"]) - int(paper["Publication Year"]) == year]
 
         if citations:
             paper[key] = len(citations)
 
     # count citations in 12 month periods
+    # not as useful
     for year in range(4):
         date_format = "%Y-%m-%d"
         key = "Citations in month %s to %s" % (str((year-1)*12), str(year*12))
