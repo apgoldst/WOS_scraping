@@ -7,15 +7,32 @@ import os
 import time
 
 
+SID = "8Dg5gUNhs3bnQ8n8pXV"
 
+UID = "WOS:000216886900006"
+
+#results = submit_search.search_for_citing_articles(UID, SID)
+#
+#with open("citing articles full results.txt", "w") as f:
+#    f.write(str(results))
+
+#results2 = wok_soap.search("UT = WOS:000216886900006", SID)
+#with open("regular search full results.txt", "w") as f:
+#    f.write(str(results2))
+
+results3 = wok_soap.search("FT = AR0000006", SID)
+print(results3)
+
+with open("grant search full results.txt", "w") as f:
+    f.write(str(results3))
 
 #SID = wok_soap.auth()
 #print(SID)
-
-csv_file = "example DOIs.csv"
-SID="8BIaALTznDdvcPRBWqF"
-
-save_tables.print_pub_table_from_DOIs(csv_file)
+#
+#csv_file = "example DOIs.csv"
+#SID="8BIaALTznDdvcPRBWqF"
+#
+#save_tables.print_pub_table_from_DOIs(csv_file)
 
 
 
@@ -28,11 +45,11 @@ save_tables.print_pub_table_from_DOIs(csv_file)
 #    tree = ET.parse(h)
 #    print(str(tree))
 #    root = tree.getroot()
-#    
+#
 #if root:
 #    print(root[0])
-#    
-#    
+#
+#
 #
 #record = root[0]
 #paper = save_tables.process_article(record)

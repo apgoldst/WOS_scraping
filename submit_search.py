@@ -24,7 +24,7 @@ def search_by_grant(csv_file, SID):
     counter = 0
 
     for i, cell in enumerate(grant_list):
-       
+
         # Define query
         grant_number_full = cell
         if grant_number_full[0:2] == "DE":
@@ -92,17 +92,17 @@ def search_by_DOI(csv_file, SID):
     counter = 0
 
     for i, cell in enumerate(doi_list):
-       
+
         #remove non-printing characters
         ID = cell.strip(' \t\n\r').replace(" ","").replace(u'\u200b','')
         print("ID is " + ID)
-        
-        # Define query 
+
+        # Define query
         if ID[0:3] == "WOS":
             query = "UT = " + ID
         else:
             query = 'DO = "' + ID + '"'
-        
+
         # create filename without slashes or quotes
         filename = "DOI search results xml/" + query.replace("/"," ").replace('"',"") + ".txt"
         file_list.append(filename)
@@ -237,15 +237,15 @@ def counter_check(counter, SID):
 
 
 if __name__ == '__main__':
-     
+
     SID = wok_soap.auth()
-    
+
     csv_file = "example DOIs.csv"
     file_list = search_by_DOI(csv_file, SID)
     print(file_list[0])
-    
+
 #    UID = "WOS:000283490400005"
-#    
+#
 #    search_for_citing_articles(UID, SID)
 
 

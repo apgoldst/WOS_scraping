@@ -56,7 +56,7 @@ def process_article(record):
     titles = summary.find(ns + "titles")
     article_title = titles.find("*[@type='item']").text
     paper["Article Title"] = article_title
-    
+
     doctypes = summary.find(ns + "doctypes")
     doctype = doctypes[0].text
     paper["Document Type"] = doctype
@@ -159,29 +159,29 @@ def process_citing_articles(citing_articles_output):
             UID = record[0]
             static_data = record[1]
             dynamic_data = record[2]
-            
+
             paper["UID"] = UID.text
-            
+
             summary = static_data[0]
-            
+
             # pull date and year from <summary> object
             pub_info = summary.find(ns + "pub_info")
-            
+
             date = pub_info.attrib['sortdate']
             paper["Publication Date"] = date
 
             year = pub_info.attrib['pubyear']
             paper["Publication Year"] = year
-            
+
             # pull article and journal title from <summary> object
             titles = summary.find(ns + "titles")
-            
+
             article_title = titles.find("*[@type='item']").text
             paper["Article Title"] = article_title
 
             journal_title = titles.find("*[@type='source']").text
             paper["Journal Title"] = journal_title
-            
+
             #pull DOI from dynamic data section
             doi = dynamic_data.find(".//*[@type='doi']")
             xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
@@ -189,7 +189,7 @@ def process_citing_articles(citing_articles_output):
                 doi = doi.attrib['value']
             elif xref_doi is not None:
                 doi = xref_doi.attrib['value']
-            else: 
+            else:
                 doi = "NONE"
             paper["DOI"] = doi
 
@@ -233,7 +233,7 @@ def citation_analysis(paper, SID, counter):
 
         paper[key] = 0
         citations = []
-        
+
         citations = [article["Publication Year"] for article in paper["__citing articles"]
                      if int(article["Publication Year"]) - int(paper["Publication Year"]) == year]
 
@@ -350,13 +350,13 @@ def print_pub_table(data, csv_file):
 
         writer = csv.writer(g, delimiter=',')
 
-       # select one example grant 
+       # select one example grant
         example_grant = []
         for item in data:
             example_grant = item["__paper list"]
             if example_grant:
                 break
-            
+
         # Write heading for paper data from dictionary keys
         # excluding "__cited refs" and "__citing articles", which sort to the end
         example_paper = example_grant[0]
@@ -374,8 +374,8 @@ def print_pub_table(data, csv_file):
                 dictionary_tuples = sorted(list(paper.items()), key=lambda k: k[0])[:-2]
                 row = [field[1] for field in dictionary_tuples]
                 writer.writerow(row)
-                
-                
+
+
 def print_pub_table_from_DOIs(csv_file):
 
     # start session
@@ -392,12 +392,12 @@ def print_pub_table_from_DOIs(csv_file):
 
     # loop through each entry in the list of files found
     for i, filename in enumerate(file_list):
-        
+
         # open search results file and parse as XML
         with open(filename) as h:
             tree = ET.parse(h)
             root = tree.getroot()
-        
+
         # if the file is not empty, process the record
         if root:
             record = root[0]
@@ -407,25 +407,25 @@ def print_pub_table_from_DOIs(csv_file):
             paper_list.append(paper)
         else:
             print("no paper found")
-        
+
     print("printing publication table")
     with open("WOS_scraping - " + csv_file[:-4] + " - " +
               time.strftime("%d %b %Y") + ".csv", "w") as g:
 
         writer = csv.writer(g, delimiter=',')
-        
+
         example_paper = paper_list[0]
         heading_tuples = sorted(example_paper.items(), key=lambda k: k[0])[:-2]
         heading = [field[0] for field in heading_tuples]
         writer.writerow(heading)
-        
+
         # Fill in values for paper data
         for paper in paper_list:
             print("writing row for " + paper["DOI"])
             dictionary_tuples = sorted(paper.items(), key=lambda k: k[0])[:-2]
             row = [field[1] for field in dictionary_tuples]
             writer.writerow(row)
-        
+
 
 def print_cited_refs_table(data):
 
@@ -470,11 +470,11 @@ def print_citing_articles_table(data):
 
 
 if __name__ == '__main__':
-    
-    csv_file = "Publication list for WOS search.csv"
+
+    csv_file = "example DOIs.csv"
 
     print_pub_table_from_DOIs(csv_file)
 
-#    print_pub_table(data, csv_file)
-#    print_grant_table(data, csv_file)
+    # data = construct_data(csv_file)
+    # print_pub_table(data, csv_file)
 
