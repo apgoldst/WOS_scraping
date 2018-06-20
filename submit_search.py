@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 
 
-def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
+def searchByGrantOrDOI(csv_file, searchType, SID):
     directory = "search by grant or doi xml/"
     if not os.path.exists(directory): # Check for and create a directory
         os.makedirs(directory)
@@ -26,13 +26,13 @@ def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
     
     
     #Handle second argument
-    grantOrDOI = grantOrDOI.lower() # lowercases the string
-    acceptableSearchTypes = ["grant", "doi"]
-    if grantOrDOI not in acceptableSearchTypes: # raise error if grantOrDOI is not a grant or a doi
+    searchType = searchType.lower() # lowercases the string
+    acceptableSearchTypes = ["grant", "doi"] # later can add author, etc
+    if searchType not in acceptableSearchTypes: # raise error if grantOrDOI is not a grant or a doi
         raise Exception("Second argument of searchByGrantOrDOI must be 'grant' or 'doi'")
     
     # CREATE QUERY
-    if grantOrDOI == "grant": # === Create query for grant ===
+    if searchType == "grant": # === Create query for grant ===
         for result in resultList:
             fullNumber = result
             if fullNumber[0:2] == "DE":
@@ -44,9 +44,10 @@ def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
                 query = "FT = " + str(fullNumber)
             filename = directory + query.replace("/", "") + ".txt" # Creates filename without slashes or quotes
             
+            # Add each file to file list
             file_list.append(filename)
                 
-    elif grantOrDOI == "doi": #=== Create query for DOI ===
+    elif searchType == "doi": #=== Create query for DOI ===
         for result in resultList:
             ID = result[1].strip(' \t\n\r').replace(" ","").replace(u'\u200b','') #remove non-printing characters
             print("ID is " + ID)
@@ -58,6 +59,7 @@ def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
             # create filename without slashes or quotes
             filename = directory + query.replace("/"," ").replace('"',"") + ".txt"  # check later
             
+            # Add each file to file list
             file_list.append(filename)
             
     #file_list.append(filename)
@@ -77,6 +79,7 @@ def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
                 # Interpret raw search results stored in 4th line of object
                 results_unicode = results[3] #actually contains results of search
                 
+                # Handling throttle problems - can't get more than 100 at once
                 if results_count > 100:
                     retrieve_count = (results_count // 100)
     
@@ -100,126 +103,8 @@ def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
                 with open(filename, "w") as f:
                     f.write(results_unicode)
     
-    return [resultList, file_list, counter]
-        
-        
-        
-# search for publications by grant number acknowledged
-# input is a CSV list of grants, with no header row and grant numbers in column A
-def search_by_grant(csv_file, SID):
-    
-    directory = "grant search results xml"
-    if not os.path.exists(directory): # if the directory doesn't already exist, make one
-        os.makedirs(directory)
-
-    with open(csv_file) as h:
-        text = csv.reader(h)
-        grant_list = [row[0] for row in text]# puts first cell in each row as a grant member in grant_list
-        print("grant list = " + str(grant_list))
-
-    file_list = []
-    counter = 0
-
-    for i, cell in enumerate(grant_list): #enumerate pulls out index (i) and content (cell) in the list
-       #could be- for cell in grant_list: (because i is not used)
-        # Define query
-        grant_number_full = cell
-        if grant_number_full[0:2] == "DE":
-            prefix = grant_number_full[3:5]
-            grant_number = grant_number_full[5:]
-            query = "FT = " + prefix + grant_number + " OR FT = " + prefix + " " + grant_number
-            filename = "grant search results xml/" + query + ".txt"
-        else:
-            query = "FT = " + grant_number_full
-            filename = "grant search results xml/" + query.replace("/","") + ".txt"
-
-        file_list.append(filename)
-
-        if not os.path.exists(filename):
-            print(query)
-
-            # Search on WOS
-            results = wok_soap.search(query, SID)
-            [counter, SID] = counter_check(counter, SID)
-
-            queryId = results[0]
-            results_count = results[1]
-
-            # Interpret raw search results stored in 4th line of object
-            results_unicode = results[3] #actually contains results of search
-
-            if results_count > 100:
-                retrieve_count = (results_count // 100)
-
-                if results_count % 100 == 0:
-                    retrieve_count -= 1
-
-                for hundred in range(retrieve_count):
-                    start_count = (100*hundred) + 101
-                    more_results = wok_soap.retrieve(queryId, SID, start_count, "FullRecord")
-
-                    [counter, SID] = counter_check(counter, SID)
-                    more_results_unicode = more_results[0].encode('utf-8')
-                    results_unicode = results_unicode[:-10] + more_results_unicode[86:]
-
-            root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
-            length = len(root)
-            if length != results_count:
-                raise # throw error message
-
-            # Write raw search results to txt file
-            with open(filename, "w") as f:
-                f.write(results_unicode)
-
-    return [grant_list, file_list, counter] #subscription allows only 2500 records/session. 
+    return [resultList, file_list, counter] #subscription allows only 2500 records/session. 
 #returning counter allows us to see if we are reaching limit per session so we can start new session
-
-
-# search for publications by DOI (or WOS if no DOI exists)
-# input is a CSV list of publications, with no header row and DOIs in column A
-def search_by_DOI(csv_file, SID):
-    directory = "DOI search results xml"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    with open(csv_file) as h:
-        text = csv.reader(h)
-        doi_list = [row[0] for row in text]
-
-    file_list = []
-    counter = 0 # Establishes directory just like previous function
-
-    for i, cell in enumerate(doi_list):
-       
-        #remove non-printing characters
-        ID = cell.strip(' \t\n\r').replace(" ","").replace(u'\u200b','')
-        print("ID is " + ID)
-        
-        # Define query 
-        if ID[0:3] == "WOS":
-            query = "UT = " + ID
-        else:
-            query = 'DO = "' + ID + '"'
-        
-        # create filename without slashes or quotes
-        filename = "DOI search results xml/" + query.replace("/"," ").replace('"',"") + ".txt"
-        file_list.append(filename)
-
-        if not os.path.exists(filename): # a much simpler search than Grant because each paper has unique DOI
-            print(query)
-
-            # Search on WOS
-            results = wok_soap.search(query, SID)
-            [counter, SID] = counter_check(counter, SID)
-
-            # Interpret raw search results stored in 4th line of object
-            results_unicode = results[3] 
-
-            # Write raw search results to txt file
-            with open(filename, "w") as f:
-                f.write(results_unicode)
-
-    return [file_list, counter]
 
 
 def search_for_cited_refs(UID, SID): # Searches for all the references cited in one paper given that paper's UID
