@@ -1,1 +1,0 @@
-<Element 'cited_ref' at 0xa0cacb7c8>
