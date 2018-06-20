@@ -10,22 +10,97 @@ import xml.etree.ElementTree as ET
 
 
 
-def searchByGrantOrDOI(csv_file, SID):
-    directory = "search by grant or doi xml"
-    if not os.path.exists(directory):
+def searchByGrantOrDOI(csv_file, grantOrDOI, SID):
+    directory = "search by grant or doi xml/"
+    if not os.path.exists(directory): # Check for and create a directory
         os.makedirs(directory)
     
-    # need some way to distinguish between grant search and doi search
-    with open(csv_file) as h:
-        text = csv.reader(h);
-        resultList = [row[0] for row in text]
-        
+    resultList = []
+    
+    with open(csv_file) as h: # Open a CSV file
+        text = csv.reader(h)
+        resultList = [row[0].replace(u'\ufeff','') for row in text] # gets rid of '\ufeff' at beginning of csv
         
     file_list = []
     counter = 0
-        
-    for cell in enumerate(resultList):
-        print("hello")
+    
+    
+    #Handle second argument
+    grantOrDOI = grantOrDOI.lower() # lowercases the string
+    acceptableSearchTypes = ["grant", "doi"]
+    if grantOrDOI not in acceptableSearchTypes: # raise error if grantOrDOI is not a grant or a doi
+        raise Exception("Second argument of searchByGrantOrDOI must be 'grant' or 'doi'")
+    
+    # CREATE QUERY
+    if grantOrDOI == "grant": # === Create query for grant ===
+        for result in resultList:
+            fullNumber = result
+            if fullNumber[0:2] == "DE":
+                prefix = fullNumber[3:5]
+                grantNumber = fullNumber[5:]
+                query = "FT = " + prefix + grantNumber + " OR FT = " + prefix + " " + grantNumber
+                filename = directory + "grant search results xml/" + query + ".txt" # check later
+            else:
+                query = "FT = " + str(fullNumber)
+            filename = directory + query.replace("/", "") + ".txt" # Creates filename without slashes or quotes
+            
+            file_list.append(filename)
+                
+    elif grantOrDOI == "doi": #=== Create query for DOI ===
+        for result in resultList:
+            ID = result[1].strip(' \t\n\r').replace(" ","").replace(u'\u200b','') #remove non-printing characters
+            print("ID is " + ID)
+            if ID[0:3] == "WOS": # Define query
+                query = "UT = " + ID
+            else:
+                query = 'DO = "' + ID + '"'
+                
+            # create filename without slashes or quotes
+            filename = directory + query.replace("/"," ").replace('"',"") + ".txt"  # check later
+            
+            file_list.append(filename)
+            
+    #file_list.append(filename)
+    
+    # SEARCH WOS
+    for filename in file_list:
+        if not os.path.exists(filename): # executes code only if filename doesn't already exist
+                print("query = " + filename)
+    
+                # Search on WOS
+                results = wok_soap.search(query, SID)
+                [counter, SID] = counter_check(counter, SID)
+    
+                queryId = results[0]
+                results_count = results[1]
+    
+                # Interpret raw search results stored in 4th line of object
+                results_unicode = results[3] #actually contains results of search
+                
+                if results_count > 100:
+                    retrieve_count = (results_count // 100)
+    
+                    if results_count % 100 == 0:
+                        retrieve_count -= 1
+    
+                    for hundred in range(retrieve_count):
+                        start_count = (100*hundred) + 101
+                        more_results = wok_soap.retrieve(queryId, SID, start_count, "FullRecord")
+    
+                        [counter, SID] = counter_check(counter, SID)
+                        more_results_unicode = more_results[0].encode('utf-8')
+                        results_unicode = results_unicode[:-10] + more_results_unicode[86:]
+    
+                    root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
+                    length = len(root)
+                    if length != results_count:
+                        raise # throw error message
+                
+                # Write raw search results to txt file
+                with open(filename, "w") as f:
+                    f.write(results_unicode)
+    
+    return [resultList, file_list, counter]
         
         
         
@@ -263,6 +338,7 @@ if __name__ == '__main__':
      
     SID = wok_soap.auth()
     
+    '''
     csv_file = "example DOIs.csv"
     file_list = search_by_DOI(csv_file, SID)
     print(file_list[0])
@@ -270,7 +346,11 @@ if __name__ == '__main__':
     csv_2 = "example grants.csv"
     fileList2 = search_by_grant(csv_2, SID)
     print("example grants and " + str(fileList2[0]))
+    '''
     
+    csv_file = "example grants.csv"
+    file_list = searchByGrantOrDOI(csv_file, "grant", SID)
+    print(file_list[0])
 #    UID = "WOS:000283490400005"
 #    
 #    search_for_citing_articles(UID, SID)
