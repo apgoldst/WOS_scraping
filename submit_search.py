@@ -15,95 +15,104 @@ def searchByGrantOrDOI(csv_file, searchType, SID):
     if not os.path.exists(directory): # Check for and create a directory
         os.makedirs(directory)
     
-    resultList = []
+    column1List = []
     
     with open(csv_file) as h: # Open a CSV file
         text = csv.reader(h)
-        resultList = [row[0].replace(u'\ufeff','') for row in text] # gets rid of '\ufeff' at beginning of csv
+        column1List = [row[0].replace(u'\ufeff','') for row in text] # gets rid of '\ufeff' at beginning of csv
         
     file_list = []
     counter = 0
     
+    # define queryList, a list of queries
+    queryList = []
     
-    #Handle second argument
-    searchType = searchType.lower() # lowercases the string
+    
+    # === Handle second argument, searchType ====
+    searchType = searchType.lower() # converts the string to lowercase 
     acceptableSearchTypes = ["grant", "doi"] # later can add author, etc
     if searchType not in acceptableSearchTypes: # raise error if grantOrDOI is not a grant or a doi
         raise Exception("Second argument of searchByGrantOrDOI must be 'grant' or 'doi'")
     
+  
     # CREATE QUERY
-    if searchType == "grant": # === Create query for grant ===
-        for result in resultList:
-            fullNumber = result
+    if searchType == "grant": # === Create grant query ===
+        for fullNumber in column1List:
+            
             if fullNumber[0:2] == "DE":
                 prefix = fullNumber[3:5]
                 grantNumber = fullNumber[5:]
                 query = "FT = " + prefix + grantNumber + " OR FT = " + prefix + " " + grantNumber
-                filename = directory + "grant search results xml/" + query + ".txt" # check later
             else:
                 query = "FT = " + str(fullNumber)
-            filename = directory + query.replace("/", "") + ".txt" # Creates filename without slashes or quotes
             
-            # Add each file to file list
-            file_list.append(filename)
+            queryList.append(query)
+        
                 
-    elif searchType == "doi": #=== Create query for DOI ===
-        for result in resultList:
-            ID = result[1].strip(' \t\n\r').replace(" ","").replace(u'\u200b','') #remove non-printing characters
+    elif searchType == "doi": #=== Create DOI query ===
+        for result in column1List:
+            print(result)
+            ID = result.strip(' \t\n\r').replace(" ","").replace(u'\u200b','') #remove non-printing characters
             print("ID is " + ID)
             if ID[0:3] == "WOS": # Define query
                 query = "UT = " + ID
+                print("query = " + str(query))
             else:
                 query = 'DO = "' + ID + '"'
+                print("query = " + str(query))
                 
-            # create filename without slashes or quotes
-            filename = directory + query.replace("/"," ").replace('"',"") + ".txt"  # check later
+            queryList.append(query)
             
-            # Add each file to file list
-            file_list.append(filename)
+    
+    
+    for q in queryList:
+        
+        # create filename without slashes or quotes
+        filename = directory + q.replace("/"," ").replace('"',"") + ".txt"
+        # Add each file to file list
+        file_list.append(filename)
+        
+        
+        # Search on WOS 
+        if not os.path.exists(filename):
+            results = wok_soap.search(q, SID)
+            [counter, SID] = counter_check(counter, SID)
+            queryId = results[0]
+            results_count = results[1]
             
-    #file_list.append(filename)
+            results_unicode = results[3]
+        
+            
+            
+            # Handling throttle problems - can't get more than 100 at once
+            if results_count > 100:
+                retrieve_count = (results_count // 100)
+
+                if results_count % 100 == 0:
+                    retrieve_count -= 1
+
+                for hundred in range(retrieve_count):
+                    start_count = (100*hundred) + 101
+                    more_results = wok_soap.retrieve(queryId, SID, start_count, "FullRecord")
+
+                    [counter, SID] = counter_check(counter, SID)
+                    more_results_unicode = more_results[0].encode('utf-8')
+                    results_unicode = str(results_unicode[:-10]) + str(more_results_unicode[86:])
+
+                root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
+                length = len(root)
+            
+                if length != results_count:
+                    raise Exception("length does not equal results_count")# throw error message
+                    
+            
+            # Write raw search results to txt file
+            with open(filename, "w") as f:
+                f.write(results_unicode)
+
+    print(file_list)
     
-    # SEARCH WOS
-    for filename in file_list:
-        if not os.path.exists(filename): # executes code only if filename doesn't already exist
-                print("query = " + filename)
-    
-                # Search on WOS
-                results = wok_soap.search(query, SID)
-                [counter, SID] = counter_check(counter, SID)
-    
-                queryId = results[0]
-                results_count = results[1]
-    
-                # Interpret raw search results stored in 4th line of object
-                results_unicode = results[3] #actually contains results of search
-                
-                # Handling throttle problems - can't get more than 100 at once
-                if results_count > 100:
-                    retrieve_count = (results_count // 100)
-    
-                    if results_count % 100 == 0:
-                        retrieve_count -= 1
-    
-                    for hundred in range(retrieve_count):
-                        start_count = (100*hundred) + 101
-                        more_results = wok_soap.retrieve(queryId, SID, start_count, "FullRecord")
-    
-                        [counter, SID] = counter_check(counter, SID)
-                        more_results_unicode = more_results[0].encode('utf-8')
-                        results_unicode = results_unicode[:-10] + more_results_unicode[86:]
-    
-                    root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
-                    length = len(root)
-                    if length != results_count:
-                        raise # throw error message
-                
-                # Write raw search results to txt file
-                with open(filename, "w") as f:
-                    f.write(results_unicode)
-    
-    return [resultList, file_list, counter] #subscription allows only 2500 records/session. 
+    return [column1List, file_list, counter] #subscription allows only 2500 records/session. 
 #returning counter allows us to see if we are reaching limit per session so we can start new session
 
 
@@ -160,6 +169,8 @@ def search_for_cited_refs(UID, SID): # Searches for all the references cited in 
         tree.write(filename)
 
     return [filename, counter]
+
+
 
 
 def search_for_citing_articles(UID, SID):
@@ -233,8 +244,8 @@ if __name__ == '__main__':
     print("example grants and " + str(fileList2[0]))
     '''
     
-    csv_file = "example grants.csv"
-    file_list = searchByGrantOrDOI(csv_file, "grant", SID)
+    csv_file = "example dois.csv"
+    file_list = searchByGrantOrDOI(csv_file, "doi", SID)
     print(file_list[0])
 #    UID = "WOS:000283490400005"
 #    

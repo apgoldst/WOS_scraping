@@ -6,143 +6,124 @@ import csv
 import submit_search
 import wok_soap
 import time
-from datetime import datetime as d
-import metaknowledge as mk
+#from datetime import datetime as d
+#import metaknowledge as mk
 
 
 
 # Constructs and returns a dictionary to hold publication data, given a record
-def process_article(record): 
+# Currently attempting to combine process_article and process_citing_articles
+def process_article(records, citing_articles_output): 
 
-    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}" #going to this site does gives a 404 error
-
-    # construct a dictionary to hold publication data
-    paper = {"UID": "",
-             "Article Title": "",
-             "DOI": "",
-             "Document Type": "",
-             "Journal Title": "",
-             "Publication Date": "",
-             "Publication Year": "",
-             "Authors": "",
-             "Abstract": "",
-             "Keywords": "",
-             
-             # could get rid of next 3 (not used)
-             "Number of Pages": 0, 
-             "Number of Authors": 0,
-             "Number of References": 0,
-                
-             # could be added to dict later
-             "Times Cited through Search Period": 0,
-             
-             # could get rid of these
-             "Average Age of Reference": None,
-             "Diversity Index": None}
-
-    UID = record[0].text # the first item in "record"
-    paper["UID"] = UID
-
-    # Assign variables to segments of the record
-    static_data = record[1]
-    summary = static_data[0]
-    fullrecord_metadata = static_data[1]
-    item = static_data[2]
-    dynamic_data = record[2] # dynamic data is the third entry in the record
-
-    pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month in metaknowledge
-    date = pub_info.attrib['sortdate']
-    paper["Publication Date"] = date
-
-    year = pub_info.attrib['pubyear'] # metaknowledge: WOS.year(val)
-    paper["Publication Year"] = year
-
-    page_count = pub_info.find(ns + "page").attrib['page_count'] # can use WOS.endingPage and WOS.beginningPage
-    paper["Number of Pages"] = page_count
-
-    titles = summary.find(ns + "titles")
-    article_title = titles.find("*[@type='item']").text
-    paper["Article Title"] = article_title
-    
-    doctypes = summary.find(ns + "doctypes")
-    doctype = doctypes[0].text
-    paper["Document Type"] = doctype
-
-    journal_title = titles.find("*[@type='source']").text
-    paper["Journal Title"] = journal_title
+    ns = "{http://scientific.thomsonreuters.com/schema/wok5.4/public/FullRecord}"
     
     
+    if citing_articles_output != "":
+        citing_articles_file = citing_articles_output[0]
+        # Opens a file and parses it
+        with open(citing_articles_file, "rb") as h:
+
+            tree = ET.parse(h)
+            root = tree.getroot()
+            
+    for record in root:
+        # construct a dictionary to hold publication data
+        paper = {"UID": "",
+                 "Article Title": "",
+                 "DOI": "",
+                 "Document Type": "",
+                 "Journal Title": "",
+                 "Publication Date": "",
+                 "Publication Year": "",
+                 "Authors": "",
+                 "Abstract": "",
+                 "Keywords": "",
+                 
+                 # could get rid of next 3 (not used)
+                 "Number of Pages": 0, 
+                 "Number of Authors": 0,
+                 "Number of References": 0,
+                    
+                 # could be added to dict later
+                 "Times Cited through Search Period": 0,
+                 
+                 # could get rid of these
+                 "Average Age of Reference": None,
+                 "Diversity Index": None}
     
-    doi = dynamic_data.find(".//*[@type='doi']") 
-    xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
-    if doi is not None:
-        doi = doi.attrib['value'] # doi.attrib is a dictionary, a field of the Element interface
-    elif xref_doi is not None: # ln 72 assigns the doi to "value" key in the .attrib dictionary
-        doi = xref_doi.attrib['value']
-    else: 
-        doi = "NONE"
-    paper["DOI"] = doi
-
-    names = summary.find(ns + "names") # .find() returns a list of Element objects/interfaces
-    author_list = []
-    author_count = 0
-    for name in names:
-        if name.attrib['role'] == "author":
-            full_name = name.find(ns + "full_name").text # look for the author's full name
-            author_list.append(full_name) # add the full name to the list
-            author_count += 1
-
-    paper["Authors"] = author_list
-    paper["Number of Authors"] = author_count
-
-    abstract = fullrecord_metadata.find(".//" + ns + "abstract_text")
-    if abstract is not None:
-        paper["Abstract"] = abstract[0].text
-
-    keywords_plus = item.find(ns + "keywords_plus")
-    keywords = []
-    if keywords_plus is not None:
-        for keyword in keywords_plus:
-            keywords.append(keyword.text)
-        paper["Keywords"] = keywords
-
-    refs = fullrecord_metadata.find(ns + "refs")
-    ref_count = refs.attrib['count']
-    paper["Number of References"] = ref_count
+        UID = records[0].text # the first item in "record"
+        paper["UID"] = UID
+        
+        # print("process_article UID = " + str(UID))
+    
+        # Assign variables to segments of the record
+        static_data = records[1]
+        summary = static_data[0]
+        fullrecord_metadata = static_data[1]
+        item = static_data[2]
+        dynamic_data = records[2] # dynamic data is the third entry in the record
+    
+        pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month in metaknowledge
+        date = pub_info.attrib['sortdate']
+        paper["Publication Date"] = date
+    
+        year = pub_info.attrib['pubyear'] # metaknowledge: WOS.year(val)
+        paper["Publication Year"] = year
+    
+        page_count = pub_info.find(ns + "page").attrib['page_count'] # can use WOS.endingPage and WOS.beginningPage
+        paper["Number of Pages"] = page_count
+    
+        titles = summary.find(ns + "titles")
+        article_title = titles.find("*[@type='item']").text
+        paper["Article Title"] = article_title
+        
+        doctypes = summary.find(ns + "doctypes")
+        doctype = doctypes[0].text
+        paper["Document Type"] = doctype
+    
+        journal_title = titles.find("*[@type='source']").text
+        paper["Journal Title"] = journal_title
+        
+        
+        
+        doi = dynamic_data.find(".//*[@type='doi']") 
+        xref_doi = dynamic_data.find(".//*[@type='xref_doi']")
+        if doi is not None:
+            doi = doi.attrib['value'] # doi.attrib is a dictionary, a field of the Element interface
+        elif xref_doi is not None: # ln 72 assigns the doi to "value" key in the .attrib dictionary
+            doi = xref_doi.attrib['value']
+        else: 
+            doi = "NONE"
+        paper["DOI"] = doi
+    
+        names = summary.find(ns + "names") # .find() returns a list of Element objects/interfaces
+        author_list = []
+        author_count = 0
+        for name in names:
+            if name.attrib['role'] == "author":
+                full_name = name.find(ns + "full_name").text # look for the author's full name
+                author_list.append(full_name) # add the full name to the list
+                author_count += 1
+    
+        paper["Authors"] = author_list
+        paper["Number of Authors"] = author_count
+    
+        abstract = fullrecord_metadata.find(".//" + ns + "abstract_text")
+        if abstract is not None:
+            paper["Abstract"] = abstract[0].text
+    
+        keywords_plus = item.find(ns + "keywords_plus")
+        keywords = []
+        if keywords_plus is not None:
+            for keyword in keywords_plus:
+                keywords.append(keyword.text)
+            paper["Keywords"] = keywords
+    
+        refs = fullrecord_metadata.find(ns + "refs")
+        ref_count = refs.attrib['count']
+        paper["Number of References"] = ref_count
 
     return paper
-
-
-# process backward references
-def process_cited_refs(cited_refs_record):
-
-    cited_refs_file = cited_refs_record[0] # first element cited_refs_record
-
-    with open(cited_refs_file, "rb") as h: # "rb" opens file and returns file object in binary mode
-
-        tree = ET.parse(h) # parse h, the file object
-        root = tree.getroot() # root contains all of the cited references?
-        cited_refs = []
-
-        for entry in root:
-            
-            ref = {"Year": entry.find("year").text,
-                   "Cited Work": ""} # constructs dictionary called ref
-
-            if ref["Year"] == "1000": # to deal with issue of no date being returned as year 1000
-                ref["Year"] = ""
-
-            citedWork = entry.find("citedWork") # finds the work cited in the entry
-
-            if citedWork is not None:
-                ref["Cited Work"] = citedWork.text.upper() #all caps
-
-                if citedWork.text[0:4] == "<IT>": # look for <IT> tag
-                    ref["Cited Work"] = citedWork.text.upper()[4:-5] # remove <IT> tag in front and back
-
-            cited_refs.append(ref)
-    
-    return cited_refs
 
 
 # process forward references- more complicated than previous function because
@@ -211,13 +192,51 @@ def process_citing_articles(citing_articles_output):
     return citing_articles
 
 
-def citation_analysis(paper, SID, counter):
+# process backward references
+def process_cited_refs(cited_refs_record):
+
+    cited_refs_file = cited_refs_record[0] # first element cited_refs_record
+
+    with open(cited_refs_file, "rb") as h: # "rb" opens file and returns file object in binary mode
+
+        tree = ET.parse(h) # parse h, the file object
+        root = tree.getroot() # root contains all of the cited references?
+        cited_refs = []
+
+        for entry in root:
+            
+            ref = {"Year": entry.find("year").text,
+                   "Cited Work": ""} # constructs dictionary called ref
+
+            if ref["Year"] == "1000": # to deal with issue of no date being returned as year 1000
+                ref["Year"] = ""
+
+            citedWork = entry.find("citedWork") # finds the work cited in the entry
+
+            if citedWork is not None:
+                ref["Cited Work"] = citedWork.text.upper() #all caps
+
+                if citedWork.text[0:4] == "<IT>": # look for <IT> tag
+                    ref["Cited Work"] = citedWork.text.upper()[4:-5] # remove <IT> tag in front and back
+
+            cited_refs.append(ref)
+    
+    return cited_refs
+
+
+
+def citation_analysis(paper, SID, counter): # should also refine search period
     UID = paper["UID"]
+    
+    print("UID = "+ str(UID))
 
     # search for references cited in the paper
     cited_refs_output = submit_search.search_for_cited_refs(UID, SID)
-    counter += cited_refs_output[1]
-    if counter >= 2499:
+    #print(cited_refs_output[1])
+    #print("counter = " + str(counter))
+    counter += cited_refs_output[1] 
+    
+    if counter >= 2499: # start a new session if counter exceeds 2500, the WOS limit
         SID = wok_soap.auth()
         counter = 0
 
@@ -238,8 +257,9 @@ def citation_analysis(paper, SID, counter):
 
     paper["__citing articles"] = process_citing_articles(citing_articles_output)
 
-    paper["Times Cited through Search Period"] = len(paper["__citing articles"]) # gets # of papers in __citing articles key
-
+    paper["Times Cited through " + str(wok_soap.endDate)] = len(paper["__citing articles"]) # gets # of papers in __citing articles key
+    
+    '''
     # count citations in calendar years relative to the year of publication, up to year 13 inclusive
     for year in range(-1, 14):
         key = "Citations in Year " + str(year)
@@ -270,7 +290,8 @@ def citation_analysis(paper, SID, counter):
 
         if citations_2:
             paper[key] = len(citations_2)
-
+    '''
+    
     # count citations in calendar years 2003-2017 inclusive
     for year in range(2003, 2018):
         key = "Citations in %s" % (str(year))
@@ -295,7 +316,7 @@ def construct_data(csv_file):
     counter = 0
 
     # run search to output list of grant numbers and list of search results file names
-    grants_and_files = submit_search.search_by_grant(csv_file, SID)
+    grants_and_files = submit_search.searchByGrantOrDOI(csv_file, "grant", SID)
     grant_list = grants_and_files[0]
     file_list = grants_and_files[1]
 
@@ -397,45 +418,67 @@ def print_pub_table_from_DOIs(csv_file):
     counter = 0
 
     # run search to output list of search results file names
-    search_output = submit_search.search_by_DOI(csv_file, SID)
-    file_list = search_output[0]
-    counter = search_output[1]
+    search_output = submit_search.searchByGrantOrDOI(csv_file, "doi", SID)
+    file_list = search_output[1]
+    counter = search_output[2]
     print("found " + str(len(file_list)) + " files")
+   
 
     paper_list = []
-
+    iterations=0
     # loop through each entry in the list of files found
-    for i, filename in enumerate(file_list):
+    for filename in file_list:
         
+        print(filename)
         # open search results file and parse as XML
         with open(filename) as h:
             tree = ET.parse(h)
             root = tree.getroot()
         
         # if the file is not empty, process the record
-        if root:
-            record = root[0]
-            paper = process_article(record)
+        # THERE IS A PROBLEM HERE!
+        
+        if root: # if the root is not Null
+            iterations += 1
+            print(iterations)
+            record = root[0] 
+            
+            paper = process_article(record, "") 
+            print(paper["Article Title"])
+            
             paper = citation_analysis(paper, SID, counter)
-            print("parsed " + filename)
+            # print("parsed " + filename)
             paper_list.append(paper)
+            
         else:
             print("no paper found")
         
-    print("printing publication table")
+    '''    
+    for paper in paper_list:
+        print("blah")
+        print(paper["Article Title"])
+    '''           
+                
+    # print("printing publication table")
+    
     with open("WOS_scraping - " + csv_file[:-4] + " - " +
               time.strftime("%d %b %Y") + ".csv", "w") as g:
 
         writer = csv.writer(g, delimiter=',')
         
+
+        # Use example paper to establish heading tuples for the csv file
         example_paper = paper_list[0]
-        heading_tuples = sorted(example_paper.items(), key=lambda k: k[0])[:-2]
+        heading_tuples = sorted(example_paper.items(), key=lambda k: k[0])[:-2] # lambda creates in-line function
         heading = [field[0] for field in heading_tuples]
         writer.writerow(heading)
         
+        
+        
         # Fill in values for paper data
         for paper in paper_list:
-            print("writing row for " + paper["DOI"])
+            
+            # print("writing row for " + paper["Article Title"])
             dictionary_tuples = sorted(paper.items(), key=lambda k: k[0])[:-2]
             row = [field[1] for field in dictionary_tuples]
             writer.writerow(row)
@@ -485,10 +528,10 @@ def print_citing_articles_table(data):
 
 if __name__ == '__main__':
     
-    csv_file = "example grants.csv"
-    data = construct_data(csv_file)
+    csv_file = "example dois.csv" # contains two DOIs, so should have two papers
+    # data = construct_data(csv_file)
 
-    print_pub_table(data, csv_file)
+    print_pub_table_from_DOIs(csv_file)
 
 #    print_pub_table(data, csv_file)
 #    print_grant_table(data, csv_file)

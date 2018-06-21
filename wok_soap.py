@@ -78,7 +78,7 @@ def retrieveById(UID, SID):
 
 
 # search for citing articles in a given time period
-def citingArticles(UID, SID, begDate, endDate):
+def citingArticles(UID, SID, endDate):
     url = client = {}
     start_time = time.time()
 
@@ -92,7 +92,7 @@ def citingArticles(UID, SID, begDate, endDate):
     uid = UID
     queryLanguage = "en"
     editions = None
-    timeSpan = {'begin': begDate, # 2003-01-01
+    timeSpan = {'begin': "1900-01-01",
                 'end': endDate} # 2017-12-31
 
     rparams = {'count': 100,
@@ -180,6 +180,7 @@ def check_time(start_time):
 
 
 
+endDate = "2017-12-31"
 
 
 if __name__ == '__main__':
@@ -192,10 +193,9 @@ if __name__ == '__main__':
     
     
     # random dates input by neosha
-    begDate = "2004-07-09"
-    endDate = "2015-01-01"
+    #begDate = "2004-07-09"
     
-    citing_articles = citingArticles(UID, SID, begDate, endDate)
+    citing_articles = citingArticles(UID, SID, endDate)
     queryId = citing_articles[0]
     print(citing_articles)
 
