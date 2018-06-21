@@ -44,12 +44,20 @@ def process_article(record):
     
     # print("process_article UID = " + str(UID))
     
-    # Assign variables to segments of the record
-    static_data = record[1]
+
+    # Establish static_data, summary, fullrecord_metadata, item, and dynamic_data, 
+    # from which we will assign various segments of the record to keys in the dictionary
+    
+    static_data = record[1] # WTF WENT WRONG?!
     summary = static_data[0]
-    fullrecord_metadata = static_data[1]
+    fullrecord_metadata = static_data[1] # the problem is here: IndexError: child index out of range
     item = static_data[2]
-    dynamic_data = record[2] # dynamic data is the third entry in the record
+    dynamic_data = record[2]
+    
+    # copied from previous version from github from process_citing_articles
+    UID = record[0]
+    static_data = record[1]
+    dynamic_data = record[2]
     
     pub_info = summary.find(ns + "pub_info") # can be gotten with WOS.month in metaknowledge
     date = pub_info.attrib['sortdate']
@@ -130,7 +138,10 @@ def process_citing_articles(citing_articles_output):
     # call process_article here?? process_article looks for a lot more dict keys
     for record in root:
             
-            process_article(record)
+            paper = process_article(record)
+            
+            # Now there needs to be some sort of process for handling things 
+            # when they are returned as null.
 
             citing_articles.append(paper)
 
@@ -380,15 +391,13 @@ def print_pub_table_from_DOIs(csv_file):
             tree = ET.parse(h)
             root = tree.getroot()
         
-        # if the file is not empty, process the record
-        # THERE IS A PROBLEM HERE!
         
         if root: # if the root is not Null
             iterations += 1
             print(iterations)
             record = root[0] 
             
-            paper = process_article(record, "") 
+            paper = process_article(record) # process_article is defined above
             print(paper["Article Title"])
             
             paper = citation_analysis(paper, SID, counter)
