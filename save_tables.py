@@ -24,7 +24,6 @@ def process_article(record):
              "Publication Date": "",
              "Publication Year": "",
              "Authors": "",
-             "Abstract": "",
              "Keywords": "",
              
              # could get rid of next 3 (not used)
@@ -50,9 +49,34 @@ def process_article(record):
     
     static_data = record[1] # WTF WENT WRONG?!
     summary = static_data[0]
-    fullrecord_metadata = static_data[1] # the problem is here: IndexError: child index out of range
-    item = static_data[2]
     dynamic_data = record[2]
+      
+    
+    # Handle if static_data[1] (fullrecord_metadata) is None
+    if static_data[1] != None:
+        print("yay")
+        # do all the stuff that requires fullrecord_metadata
+        fullrecord_metadata = static_data[1]
+        
+        # Get abstract
+        abstract = fullrecord_metadata.find(".//" + ns + "abstract_text")
+        if abstract is not None:
+            paper["Abstract"] = abstract[0].text
+        
+        # Get number of references
+        refs = fullrecord_metadata.find(ns + "refs")
+        ref_count = refs.attrib['count']
+        paper["Number of References"] = ref_count
+    
+    # Handle if static_data[2] ()   
+    if static_data[2] != None:
+        item = static_data[2]
+        keywords_plus = item.find(ns + "keywords_plus")
+        keywords = []
+        if keywords_plus is not None:
+            for keyword in keywords_plus:
+                keywords.append(keyword.text)
+        paper["Keywords"] = keywords
     
     # copied from previous version from github from process_citing_articles
     UID = record[0]
@@ -104,20 +128,9 @@ def process_article(record):
     paper["Authors"] = author_list
     paper["Number of Authors"] = author_count
     
-    abstract = fullrecord_metadata.find(".//" + ns + "abstract_text")
-    if abstract is not None:
-        paper["Abstract"] = abstract[0].text
     
-    keywords_plus = item.find(ns + "keywords_plus")
-    keywords = []
-    if keywords_plus is not None:
-        for keyword in keywords_plus:
-            keywords.append(keyword.text)
-        paper["Keywords"] = keywords
     
-    refs = fullrecord_metadata.find(ns + "refs")
-    ref_count = refs.attrib['count']
-    paper["Number of References"] = ref_count
+    
     
     return paper
 
@@ -137,11 +150,13 @@ def process_citing_articles(citing_articles_output):
 
     # call process_article here?? process_article looks for a lot more dict keys
     for record in root:
+            UID = record[0]
+            print("The UID is: " + UID.text)
+            
+            #static_data = record[1]
+            #print("The static_data is: " + str(static_data[1].text))
             
             paper = process_article(record)
-            
-            # Now there needs to be some sort of process for handling things 
-            # when they are returned as null.
 
             citing_articles.append(paper)
 
