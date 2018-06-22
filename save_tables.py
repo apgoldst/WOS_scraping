@@ -96,7 +96,7 @@ def process_article(record):
     titles = summary.find(ns + "titles")
     article_title = titles.find("*[@type='item']").text
     paper["Article Title"] = article_title
-    
+
     doctypes = summary.find(ns + "doctypes")
     doctype = doctypes[0].text
     paper["Document Type"] = doctype
@@ -127,10 +127,6 @@ def process_article(record):
     
     paper["Authors"] = author_list
     paper["Number of Authors"] = author_count
-    
-    
-    
-    
     
     return paper
 
@@ -195,7 +191,6 @@ def process_cited_refs(cited_refs_record):
     return cited_refs
 
 
-
 def citation_analysis(paper, SID, counter): # should also refine search period
     UID = paper["UID"]
     
@@ -236,6 +231,7 @@ def citation_analysis(paper, SID, counter): # should also refine search period
         key = "Citations in Year " + str(year)
 
         paper[key] = 0
+
         citations = [] # list of articles 
         
         citations = [entry["Publication Year"] for entry in paper["__citing articles"]
@@ -358,11 +354,12 @@ def print_pub_table(data, csv_file):
 
        # select one example grant 
         example_grant = [] #  
+
         for item in data:
             example_grant = item["__paper list"] # example_grant = list of papers
             if example_grant: # check if example_grant is not empty
                 break
-            
+
         # Write heading for paper data from dictionary keys
         # excluding "__cited refs" and "__citing articles", which sort to the end
         example_paper = example_grant[0] # sets example_paper = to first paper in __paper list
@@ -380,8 +377,8 @@ def print_pub_table(data, csv_file):
                 dictionary_tuples = sorted(list(paper.items()), key=lambda k: k[0])[:-2]
                 row = [field[1] for field in dictionary_tuples]
                 writer.writerow(row)
-                
-                
+
+
 def print_pub_table_from_DOIs(csv_file):
 
     # start session
@@ -398,14 +395,15 @@ def print_pub_table_from_DOIs(csv_file):
     paper_list = []
     iterations=0
     # loop through each entry in the list of files found
+
     for filename in file_list:
         
         print(filename)
+
         # open search results file and parse as XML
         with open(filename) as h:
             tree = ET.parse(h)
-            root = tree.getroot()
-        
+            root = tree.getroot()        
         
         if root: # if the root is not Null
             iterations += 1
@@ -433,17 +431,15 @@ def print_pub_table_from_DOIs(csv_file):
     with open("WOS_scraping - " + csv_file[:-4] + " - " +
               time.strftime("%d %b %Y") + ".csv", "w") as g:
 
-        writer = csv.writer(g, delimiter=',')
-        
+        writer = csv.writer(g, delimiter=',')       
 
         # Use example paper to establish heading tuples for the csv file
+
         example_paper = paper_list[0]
         heading_tuples = sorted(example_paper.items(), key=lambda k: k[0])[:-2] # lambda creates in-line function
         heading = [field[0] for field in heading_tuples]
         writer.writerow(heading)
-        
-        
-        
+
         # Fill in values for paper data
         for paper in paper_list:
             
@@ -451,7 +447,7 @@ def print_pub_table_from_DOIs(csv_file):
             dictionary_tuples = sorted(paper.items(), key=lambda k: k[0])[:-2]
             row = [field[1] for field in dictionary_tuples]
             writer.writerow(row)
-        
+
 
 def print_cited_refs_table(data):
 
@@ -502,6 +498,6 @@ if __name__ == '__main__':
 
     print_pub_table_from_DOIs(csv_file)
 
-#    print_pub_table(data, csv_file)
-#    print_grant_table(data, csv_file)
+    # data = construct_data(csv_file)
+    # print_pub_table(data, csv_file)
 

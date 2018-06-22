@@ -70,6 +70,7 @@ def searchByGrantOrDOI(csv_file, searchType, SID):
         # create filename without slashes or quotes
         filename = directory + q.replace("/"," ").replace('"',"") + ".txt"
         # Add each file to file list
+
         file_list.append(filename)
         
         
@@ -97,6 +98,7 @@ def searchByGrantOrDOI(csv_file, searchType, SID):
 
                     [counter, SID] = counter_check(counter, SID)
                     more_results_unicode = more_results[0].encode('utf-8')
+
                     results_unicode = str(results_unicode[:-10]) + str(more_results_unicode[86:])
 
                 root = ET.fromstring(results_unicode) # ET = element tree. results_unicode is the object that contains all the search results
@@ -105,7 +107,6 @@ def searchByGrantOrDOI(csv_file, searchType, SID):
                 if length != results_count:
                     raise Exception("length does not equal results_count")# throw error message
                     
-            
             # Write raw search results to txt file
             with open(filename, "w") as f:
                 f.write(results_unicode)
@@ -231,7 +232,7 @@ def counter_check(counter, SID):
 
 
 if __name__ == '__main__':
-     
+
     SID = wok_soap.auth()
     
     '''
@@ -247,8 +248,9 @@ if __name__ == '__main__':
     csv_file = "example dois.csv"
     file_list = searchByGrantOrDOI(csv_file, "doi", SID)
     print(file_list[0])
+
 #    UID = "WOS:000283490400005"
-#    
+#
 #    search_for_citing_articles(UID, SID)
 
 

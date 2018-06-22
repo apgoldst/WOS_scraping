@@ -1970,4 +1970,6 @@ WoSWS20140310_Documentation.pdf
 sandbox.py
 sandbox.py
 *.txt
+*.pyc
 *.csv
+sandbox.py

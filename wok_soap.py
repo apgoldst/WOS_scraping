@@ -184,18 +184,18 @@ endDate = "2017-12-31"
 
 
 if __name__ == '__main__':
-    
+
 #test script with example search
-    
+
     SID = auth()
 
     UID = "WOS:000283490400005"
-    
     
     # random dates input by neosha
     #begDate = "2004-07-09"
     
     citing_articles = citingArticles(UID, SID, endDate)
+
     queryId = citing_articles[0]
     print(citing_articles)
 
