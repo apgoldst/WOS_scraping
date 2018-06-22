@@ -26,7 +26,8 @@ def auth():
     url['auth'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WOKMWSAuthenticate?wsdl'
     client['auth'] = Client(url['auth'])
     SID = client['auth'].service.authenticate()
-    print(SID)
+
+    #print(SID)
     return SID
 
 
@@ -36,21 +37,21 @@ def search(query, SID):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID)) #build_opener returns an OpenerDirector instance
     http.urlopener = opener
     url['search'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['search'] = Client(url['search'], transport=http)
 
     qparams = {'databaseId': 'WOS',
                'userQuery': query,
-               'queryLanguage': 'en'}
+               'queryLanguage': 'en'} # parameters of our query. there are optional parameters such as time etc
 
     rparams = {'count': 100,
                'firstRecord': 1}
 
     check_time(start_time)
 
-    return client['search'].service.search(qparams, rparams)
+    return client['search'].service.search(qparams, rparams) # constructs query and returns list ish thing with id as first element, result, etc.
 
 
 # perform search on one or more database identifiers and return the record(s)
@@ -59,25 +60,25 @@ def retrieveById(UID, SID):
     start_time = time.time()
 
     http = HttpTransport()
-    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID))
-    http.urlopener = opener
+    opener = urllib.request.build_opener(HTTPSudsPreprocessor(SID)) #build_opener returns OpenerDirector object
+    http.urlopener = opener #hands OpenerDirector object to http
     url['retrieveById'] = 'http://search.webofknowledge.com/esti/wokmws/ws/WokSearch?wsdl'
     client['retrieveById'] = Client(url['retrieveById'], transport=http)
 
-    databaseId = "WOS"
+    databaseId = "WOS" # qparams?!
     uid = UID
     queryLanguage = "en"
 
-    rparams = {'count': 1,
+    rparams = {'count': 1, # retrieve 1 result instead of 100
                'firstRecord': 1}
 
-    check_time(start_time)
+    check_time(start_time) #where does this come from?!
 
     return client['retrieveById'].service.retrieveById(databaseId, uid, queryLanguage, rparams)
 
 
 # search for citing articles in a given time period
-def citingArticles(UID, SID):
+def citingArticles(UID, SID, endDate):
     url = client = {}
     start_time = time.time()
 
@@ -91,8 +92,8 @@ def citingArticles(UID, SID):
     uid = UID
     queryLanguage = "en"
     editions = None
-    timeSpan = {'begin': "2003-01-01",
-                'end': "2017-12-31"}
+    timeSpan = {'begin': "1900-01-01",
+                'end': endDate} # 2017-12-31
 
     rparams = {'count': 100,
                'firstRecord': 1,
@@ -117,7 +118,7 @@ def retrieve(queryId, SID, start_count, namespace):
 
     if namespace == "FullRecord":
         rparams = {'count': 100,
-                   'firstRecord': start_count}
+                   'firstRecord': start_count} # eg, whether to start at record 1, 101, 201, to fetch extra records
 
     else:
         rparams = {'count': 100,
@@ -125,11 +126,12 @@ def retrieve(queryId, SID, start_count, namespace):
                    'viewField': {'collectionName': 'WOS',
                                  'fieldName': ['pub_info', 'titles']}}
 
-    check_time(start_time)
+    check_time(start_time) # check_time() is defined below
 
     return client['retrieve'].service.retrieve(queryId, rparams)
 
 
+# Returns records of all references cited within a paper with a given UID.
 def citedReferences(UID, SID):
     url = client = {}
     start_time = time.time()
@@ -178,6 +180,7 @@ def check_time(start_time):
 
 
 
+endDate = "2017-12-31"
 
 
 if __name__ == '__main__':
@@ -187,8 +190,12 @@ if __name__ == '__main__':
     SID = auth()
 
     UID = "WOS:000283490400005"
+    
+    # random dates input by neosha
+    #begDate = "2004-07-09"
+    
+    citing_articles = citingArticles(UID, SID, endDate)
 
-    citing_articles = citingArticles(UID, SID)
     queryId = citing_articles[0]
     print(citing_articles)
 
