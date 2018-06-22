@@ -19,7 +19,15 @@ def searchByGrantOrDOI(csv_file, searchType):
 
     with open(csv_file) as h: # Open a CSV file
         text = csv.reader(h)
-        column1List = [row[0].replace(u'\ufeff','') for row in text] # gets rid of '\ufeff' at beginning of csv
+        tupleList = [row for row in text]
+        print(tupleList)
+        column1List = []
+        column2List = []
+        for item in tupleList:
+            column1 = item[0].replace(u'\ufeff','')
+            column1List.append(column1)
+            column2 = item[1].replace(u'\ufeff','')
+            column2List.append(column2)
 
     counter = 0
     SID = ""
@@ -30,7 +38,7 @@ def searchByGrantOrDOI(csv_file, searchType):
 
     # === Handle second argument, searchType ====
     searchType = searchType.lower() # converts the string to lowercase
-    acceptableSearchTypes = ["grant", "doi"] # later can add author, etc
+    acceptableSearchTypes = ["grant", "doi", "author"] # later can add author, etc
     if searchType not in acceptableSearchTypes: # raise error if grantOrDOI is not a grant or a doi
         raise Exception("Second argument of searchByGrantOrDOI must be 'grant' or 'doi'")
 
@@ -48,7 +56,6 @@ def searchByGrantOrDOI(csv_file, searchType):
 
             queryList.append(query)
 
-
     elif searchType == "doi": #=== Create DOI query ===
         for result in column1List:
             print(result)
@@ -63,7 +70,14 @@ def searchByGrantOrDOI(csv_file, searchType):
 
             queryList.append(query)
 
+    elif searchType == "author": #=== Create author query ===
+        for i, author in enumerate(column1List):
+            organization = column2List[i]
+            print("author is " + author)
+            query = 'AU = ' + author + ' AND OG = ' + organization
+            print("query = " + str(query))
 
+            queryList.append(query)
 
     for q in queryList:
 
@@ -235,7 +249,6 @@ def counter_check(counter, SID):
 
 if __name__ == '__main__':
 
-    SID = wok_soap.auth()
 
     '''
     csv_file = "example DOIs.csv"
@@ -245,11 +258,13 @@ if __name__ == '__main__':
     csv_2 = "example grants.csv"
     fileList2 = search_by_grant(csv_2, SID)
     print("example grants and " + str(fileList2[0]))
-    '''
+
 
     csv_file = "example dois.csv"
-    file_list = searchByGrantOrDOI(csv_file, "doi", SID)
-    print(file_list[0])
+    '''
+    csv_file = "example authors.csv"
+    search_output = searchByGrantOrDOI(csv_file, "author")
+    print(search_output[1])
 
 #    UID = "WOS:000283490400005"
 #

@@ -7,9 +7,32 @@ import os
 import time
 
 
-SID = "8Dg5gUNhs3bnQ8n8pXV"
 
-UID = "WOS:000216886900006"
+filename = "DOI search results xml/DO = ﻿10.1002 2013WR014607.txt"
+
+with open(filename) as h:
+    tree = ET.parse(h)
+    root = tree.getroot()
+
+record = root[0]
+
+paper = save_tables.process_article(record) # process_article is defined above
+print(paper["Article Title"])
+
+
+
+citing_articles_file = "citing articles search results xml/000216886900006.txt"
+
+with open(citing_articles_file, "rb") as h:
+        tree = ET.parse(h)
+        root = tree.getroot()
+
+record = root[0]
+
+paper = save_tables.process_article(record) # process_article is defined above
+print(paper["Article Title"])
+
+#UID = "WOS:000216886900006"
 
 #results = submit_search.search_for_citing_articles(UID, SID)
 #
@@ -20,11 +43,11 @@ UID = "WOS:000216886900006"
 #with open("regular search full results.txt", "w") as f:
 #    f.write(str(results2))
 
-results3 = wok_soap.search("FT = AR0000006", SID)
-print(results3)
-
-with open("grant search full results.txt", "w") as f:
-    f.write(str(results3))
+#results3 = wok_soap.search("FT = AR0000006", SID)
+#print(results3)
+#
+#with open("grant search full results.txt", "w") as f:
+#    f.write(str(results3))
 
 #SID = wok_soap.auth()
 #print(SID)

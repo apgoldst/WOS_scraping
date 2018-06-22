@@ -53,7 +53,7 @@ def process_article(record):
 
 
     # Handle if static_data[1] (fullrecord_metadata) is None
-    if static_data[1] != None:
+    if len(static_data) >= 2:
         print("yay")
         # do all the stuff that requires fullrecord_metadata
         fullrecord_metadata = static_data[1]
@@ -69,7 +69,7 @@ def process_article(record):
         paper["Number of References"] = ref_count
 
     # Handle if static_data[2] ()
-    if static_data[2] != None:
+    if len(static_data) >= 3:
         item = static_data[2]
         keywords_plus = item.find(ns + "keywords_plus")
         keywords = []
@@ -276,7 +276,7 @@ def construct_data(csv_file):
 
 
     # run search to output list of grant numbers and list of search results file names
-    grants_and_files = submit_search.searchByGrantOrDOI(csv_file, "grant", SID)
+    grants_and_files = submit_search.searchByGrantOrDOI(csv_file, "grant")
     grant_list = grants_and_files[0]
     file_list = grants_and_files[1]
 
@@ -369,7 +369,7 @@ def print_pub_table(data, csv_file):
 def print_pub_table_from_DOIs(csv_file):
 
     # run search to output list of search results file names
-    search_output = submit_search.searchByGrantOrDOI(csv_file, "doi", SID)
+    search_output = submit_search.searchByGrantOrDOI(csv_file, "doi")
     file_list = search_output[1]
     counter = search_output[2]
     print("found " + str(len(file_list)) + " files")
